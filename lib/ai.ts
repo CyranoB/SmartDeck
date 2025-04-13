@@ -257,7 +257,8 @@ export async function generateFlashcards(
   transcript: string, 
   count: number = 10, 
   language: "en" | "fr" = "en",
-  existingQuestions: Flashcard[] = []
+  existingQuestions: Flashcard[] = [],
+  difficulty: number = 3 // Default to medium difficulty
 ) {
   try {
     // Check if transcript is too large for a single request (using configurable threshold)
@@ -282,6 +283,7 @@ export async function generateFlashcards(
           type: "generate-batch",
           isPartialTranscript: true,
           existingQuestions,
+          difficulty,
         }),
       });
       
@@ -307,6 +309,7 @@ export async function generateFlashcards(
           language,
           type: "generate-batch",
           existingQuestions,
+          difficulty,
         }),
       });
       
@@ -329,7 +332,8 @@ export async function generateMcqs(
   courseData: any,
   transcript: string,
   language: "en" | "fr" = "en",
-  count: number = 10
+  count: number = 10,
+  difficulty: number = 3 // Default to medium difficulty
 ): Promise<McqQuestion[]> {
   try {
     // Check if transcript is too large for a single request (using configurable threshold)
@@ -353,6 +357,7 @@ export async function generateMcqs(
           language,
           type: "generate-mcq-batch",
           isPartialTranscript: true,
+          difficulty,
         }),
       });
       
@@ -376,6 +381,7 @@ export async function generateMcqs(
           count,
           language,
           type: "generate-mcq-batch",
+          difficulty,
         }),
       });
       

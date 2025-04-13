@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
           transcript: body.transcript,
           count: body.count || 10,
           language: body.language || "en",
+          difficulty: body.difficulty || 3, // Default to medium difficulty if not provided
         });
         return NextResponse.json(flashcardsResult);
       }
@@ -125,7 +126,8 @@ export async function POST(req: NextRequest) {
           courseData: body.courseData,
           transcript: body.transcript,
           count: body.count || 10,
-          language: body.language || "en"
+          language: body.language || "en",
+          difficulty: body.difficulty || 3, // Default to medium difficulty if not provided
         });
         return NextResponse.json(mcqsResult);
       }

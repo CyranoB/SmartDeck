@@ -13,6 +13,7 @@ import { translations } from "@/lib/translations"
 import { generateMcqs } from "@/lib/ai"
 import { McqQuestion, McqSessionData } from "@/types/mcq"
 import { cn } from "@/lib/utils"
+import { DifficultySelector } from "@/components/difficulty-selector"
 
 export default function McqPage() {
   const [sessionData, setSessionData] = useState<McqSessionData | null>(null)
@@ -20,15 +21,28 @@ export default function McqPage() {
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false)
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState("")
+  const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 1 })
   const [isGenerating, setIsGenerating] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [showDifficultySelector, setShowDifficultySelector] = useState(true)
+  const [selectedDifficulty, setSelectedDifficulty] = useState<number>(0)
   const router = useRouter()
   const { toast } = useToast()
   const { language } = useLanguage()
   const t = translations[language]
 
+  // Handle difficulty selection
+  const handleDifficultySelected = (difficulty: number) => {
+    setSelectedDifficulty(difficulty)
+    setShowDifficultySelector(false)
+    // Store the selected difficulty in session storage
+    sessionStorage.setItem("selectedDifficulty", difficulty.toString())
+    // Trigger MCQ generation
+    initializeSession(difficulty)
+  }
+
   // Memorize the MCQ generation function to prevent recreation on each render
-  const initializeSession = useCallback(async () => {
+  const initializeSession = useCallback(async (difficulty?: number) => {
     // Skip if already generating to avoid duplicate calls
     if (isGenerating) return
 
@@ -47,6 +61,9 @@ export default function McqPage() {
 
     // Set generating flag to prevent duplicate calls
     setIsGenerating(true)
+    
+    // Use provided difficulty or fall back to selected difficulty or default (3)
+    const difficultyToUse = difficulty !== undefined ? difficulty : selectedDifficulty || 3
 
     try {
       // Simulate progress for better UX
@@ -61,9 +78,30 @@ export default function McqPage() {
       }, 500)
 
       setStatus(t.generating)
-      console.log(`Generating MCQs in ${language} (single call pattern)`)
-
-      const questions = await generateMcqs(JSON.parse(courseData), transcript, language)
+      console.log(`Generating MCQs in ${language} with difficulty ${difficultyToUse}`)
+      
+      // Set up event listener for chunk progress updates
+      const handleChunkProgress = (event: CustomEvent) => {
+        if (event.detail && event.detail.current && event.detail.total) {
+          setChunkProgress({
+            current: event.detail.current,
+            total: event.detail.total
+          });
+          
+          // Update progress bar based on chunk progress
+          const chunkPercentage = (event.detail.current / event.detail.total) * 100;
+          setProgress(Math.min(90, chunkPercentage));
+        }
+      };
+      
+      // Add event listener before API call
+      window.addEventListener('mcqChunkProgress', handleChunkProgress as EventListener);
+      
+      // Make API call
+      const questions = await generateMcqs(JSON.parse(courseData), transcript, language, 10, difficultyToUse);
+      
+      // Remove event listener after API call
+      window.removeEventListener('mcqChunkProgress', handleChunkProgress as EventListener);
 
       // Complete the progress
       clearInterval(progressInterval)
@@ -93,7 +131,7 @@ export default function McqPage() {
       // Clear the generating flag when done (or on error)
       setIsGenerating(false)
     }
-  }, [language, router, toast, t])
+  }, [language, router, toast, t, selectedDifficulty])
 
   // Check for course data and initialize on mount
   useEffect(() => {
@@ -102,12 +140,12 @@ export default function McqPage() {
     }
   }, [])
 
-  // Start generating MCQs only when initialized and not already generating
+  // Start generating MCQs only when initialized and not already generating and difficulty is selected
   useEffect(() => {
-    if (isInitialized && !isGenerating && !sessionData) {
+    if (isInitialized && !isGenerating && !sessionData && !showDifficultySelector) {
       initializeSession()
     }
-  }, [isInitialized, initializeSession, isGenerating, sessionData])
+  }, [isInitialized, initializeSession, isGenerating, sessionData, showDifficultySelector])
 
   const handleAnswerSubmit = () => {
     if (!sessionData || !selectedAnswer) return
@@ -162,6 +200,22 @@ export default function McqPage() {
     router.push("/mcq-summary")
   }
 
+  // Show difficulty selector or loading state
+  if (showDifficultySelector) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8">
+          <h1 className="text-3xl font-bold text-center">{t.mcqTitle}</h1>
+          <Card className="w-full">
+            <CardContent className="pt-6">
+              <DifficultySelector onDifficultySelected={handleDifficultySelected} />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+  
   // Show loading state with progress
   if (!sessionData) {
     return (
@@ -170,7 +224,11 @@ export default function McqPage() {
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <h1 className="text-2xl font-bold text-center">{t.mcqTitle}</h1>
           <Progress value={progress} className="w-full" />
-          <p className="text-muted-foreground">{status}</p>
+          <p className="text-muted-foreground">
+            {chunkProgress.total > 1 
+              ? `${status} (${chunkProgress.current}/${chunkProgress.total})` 
+              : status}
+          </p>
         </div>
       </div>
     )
@@ -268,4 +326,4 @@ export default function McqPage() {
       </div>
     </div>
   )
-} 
+}

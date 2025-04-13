@@ -1,3 +1,5 @@
+export type DifficultyLevel = 1 | 2 | 3 | 4 | 5;
+
 export interface McqOption {
   id: string
   text: string
@@ -22,4 +24,5 @@ export interface McqSessionData {
   totalQuestions: number
   isComplete: boolean
   startTime: number
-} 
+  difficulty?: DifficultyLevel
+}
