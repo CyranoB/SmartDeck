@@ -28,7 +28,7 @@ export const config = {
   minWordCount: safeParseInt(process.env.MIN_WORD_COUNT, 500),
 
   // Transcript processing
-  transcriptChunkThreshold: safeParseInt(process.env.TRANSCRIPT_CHUNK_THRESHOLD, 30000),
+  transcriptWordThreshold: safeParseInt(process.env.TRANSCRIPT_WORD_THRESHOLD, 15000),
 
   // Rate limiting
   rateLimitRequestsPerMinute: safeParseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE, 10),

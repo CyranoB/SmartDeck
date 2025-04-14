@@ -4,7 +4,7 @@
 
 -   **Basic Application Structure:** Next.js app with App Router, basic layout, and routing.
 -   **UI:** Core UI components using Shadcn UI, including the file upload interface (`components/upload.tsx`).
--   **Configuration:** Centralized config (`lib/config.ts`) loading from environment variables. Client-side config exposure via `NEXT_PUBLIC_` prefix works.
+-   **Configuration:** Centralized config (`lib/config.ts`) loading from environment variables. Client-side config exposure via `NEXT_PUBLIC_` prefix works. Configurable word-based transcript chunking.
 -   **Internationalization:** Basic i18n setup with `lib/translations.ts` and `useLanguage` hook.
 -   **Document Upload:** Users can select or drag-and-drop files.
 -   **File Validation (Frontend):**

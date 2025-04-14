@@ -120,7 +120,7 @@ function ensureArrayClosure(text: string, arrayName: string): string {
   }
   
   // Fallback: just close the brackets
-  return text.includes('[') ? text + ']}' : text + ']}';
+  return text + ']}';
 }
 
 /**
