@@ -70,8 +70,9 @@ The application uses a centralized configuration system (`/lib/config.ts`) that 
   - `MIN_WORD_COUNT`: Minimum required word count for meaningful analysis (default: 500)
 
 - **Transcript Processing:**
-  - `TRANSCRIPT_CHUNK_THRESHOLD`: Character threshold for transcript chunking (default: 30,000)
-  - When a transcript exceeds this threshold, the system extracts a representative sample
+  - `TRANSCRIPT_WORD_THRESHOLD`: Word-based threshold for transcript chunking (default: 15,000)
+  - When a transcript exceeds this threshold, the system extracts a representative sample from beginning, middle, and end portions
+  - Uses a `countWords` function that intelligently splits text by whitespace for accurate word counting
 
 - **Rate Limiting:**
   - `RATE_LIMIT_REQUESTS_PER_MINUTE`: Maximum requests allowed per IP (default: 10)

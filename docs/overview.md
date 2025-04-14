@@ -89,7 +89,7 @@ The application uses a centralized configuration system that allows for easy adj
 - **Maximum File Size**: Configurable via `NEXT_PUBLIC_MAX_FILE_SIZE_MB` environment variable (default: 25MB) - Checked client-side.
 - **Maximum Word Count**: Configurable via `MAX_WORD_COUNT` environment variable (default: 50,000 words)
 - **Minimum Word Count**: Configurable via `MIN_WORD_COUNT` environment variable (default: 500 words)
-- **Transcript Chunk Threshold**: Configurable via `TRANSCRIPT_CHUNK_THRESHOLD` environment variable (default: 30,000 characters)
+- **Transcript Word Threshold**: Configurable via `TRANSCRIPT_WORD_THRESHOLD` environment variable (default: 15,000 words)
 
 These limits ensure optimal performance and prevent resource exhaustion while allowing flexibility for different deployment environments.
 

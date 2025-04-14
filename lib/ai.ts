@@ -51,23 +51,44 @@ interface GenerateBatchParams {
 // NOTE: getOpenAIConfig removed as API keys are handled server-side in /api/ai
 
 /**
+ * Count words in a text string
+ * @param text Text to count words in
+ * @returns Number of words
+ */
+function countWords(text: string): number {
+  // Handle edge cases of empty or whitespace-only text
+  if (!text || text.trim().length === 0) return 0;
+  
+  // Split by whitespace and filter out empty strings
+  return text.trim().split(/\s+/).length;
+}
+
+/**
  * Extract a representative sample from a large transcript
  * This preserves the beginning, middle, and end of the document
- * to maintain context while reducing the overall size
+ * while limiting to the specified number of words
  * 
  * @param text The full transcript text
- * @param maxLength Maximum length of the sample (default: from config)
+ * @param maxWords Maximum number of words in the sample (default: from config)
  * @returns A representative sample of the text
  */
-function extractSampleFromTranscript(text: string, maxLength: number = config.transcriptChunkThreshold): string {
-  if (text.length <= maxLength) return text;
+function extractSampleFromTranscript(text: string, maxWords: number = config.transcriptWordThreshold): string {
+  const wordCount = countWords(text);
   
-  // Take portions from beginning, middle and end
-  const thirdSize = Math.floor(maxLength / 3);
-  const beginning = text.substring(0, thirdSize);
-  const middleStart = Math.floor(text.length / 2) - Math.floor(thirdSize / 2);
-  const middle = text.substring(middleStart, middleStart + thirdSize);
-  const end = text.substring(text.length - thirdSize);
+  if (wordCount <= maxWords) return text;
+  
+  // Split text into words
+  const words = text.split(/\s+/);
+  
+  // Take portions from beginning, middle and end based on word counts
+  const thirdSize = Math.floor(maxWords / 3);
+  
+  const beginning = words.slice(0, thirdSize).join(" ");
+  
+  const middleStart = Math.floor(words.length / 2) - Math.floor(thirdSize / 2);
+  const middle = words.slice(middleStart, middleStart + thirdSize).join(" ");
+  
+  const end = words.slice(words.length - thirdSize).join(" ");
   
   return `${beginning}\n\n[...]\n\n${middle}\n\n[...]\n\n${end}`;
 }
@@ -203,10 +224,11 @@ export async function fetchWithRetry(
 export async function analyzeTranscript(transcript: string, language: "en" | "fr" = "en") {
   try {
     // Check if transcript is too large for a single request (using configurable threshold)
-    const isLargeTranscript = transcript.length > config.transcriptChunkThreshold;
+    const wordCount = countWords(transcript);
+    const isLargeTranscript = wordCount > config.transcriptWordThreshold;
     
     if (isLargeTranscript) {
-      console.log(`Large transcript detected (${transcript.length} chars). Using summarization approach.`);
+      console.log(`Large transcript detected (${wordCount} words). Using summarization approach.`);
       
       // Create a representative sample of the transcript
       const sample = extractSampleFromTranscript(transcript);
@@ -263,10 +285,11 @@ export async function generateFlashcards(
 ) {
   try {
     // Check if transcript is too large for a single request (using configurable threshold)
-    const isLargeTranscript = transcript.length > config.transcriptChunkThreshold;
+    const wordCount = countWords(transcript);
+    const isLargeTranscript = wordCount > config.transcriptWordThreshold;
     
     if (isLargeTranscript) {
-      console.log(`Large transcript detected (${transcript.length} chars). Using summarization approach for flashcards.`);
+      console.log(`Large transcript detected (${wordCount} words). Using summarization approach for flashcards.`);
       
       // Create a representative sample of the transcript
       const sample = extractSampleFromTranscript(transcript);
@@ -339,10 +362,11 @@ export async function generateMcqs(
 ): Promise<McqQuestion[]> {
   try {
     // Check if transcript is too large for a single request (using configurable threshold)
-    const isLargeTranscript = transcript.length > config.transcriptChunkThreshold;
+    const wordCount = countWords(transcript);
+    const isLargeTranscript = wordCount > config.transcriptWordThreshold;
     
     if (isLargeTranscript) {
-      console.log(`Large transcript detected (${transcript.length} chars). Using summarization approach for MCQs.`);
+      console.log(`Large transcript detected (${wordCount} words). Using summarization approach for MCQs.`);
       
       // Create a representative sample of the transcript
       const sample = extractSampleFromTranscript(transcript);

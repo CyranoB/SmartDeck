@@ -32,6 +32,7 @@
 -   **Difficulty System Implementation:** Implemented a 1-5 scale difficulty system using the `DifficultyLevel` type and a star-based `DifficultySelector` component. Difficulty affects AI prompting complexity and batch processing strategy (smaller batches for higher difficulties).
 -   **Progress Tracking:** Uses React context (`ProgressContext`) to provide a centralized way to track and update generation progress across the application. This enables progress feedback during multi-batch generation processes.
 -   **MCQ Type Structure:** Defined in `types/mcq.ts`, consists of standardized question format with 4 options (A-D), correct answer tracking, and session management (score, completion status).
+-   **Transcript Processing:** Uses word-based chunking with a threshold of 15,000 words (previously used character-based with 30,000 character limit). When a transcript exceeds this threshold, the system extracts a representative sample by taking portions from the beginning, middle, and end to maintain context while reducing overall size. The implementation uses a `countWords` function that splits text by whitespace.
 
 ## 4. Dependencies
 

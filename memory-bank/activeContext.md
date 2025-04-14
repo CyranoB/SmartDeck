@@ -38,6 +38,15 @@ Implementing and refining the MCQ (Multiple-Choice Questions) feature across the
     - Added robust error handling with specific error types
     - Added validation for MCQ generation parameters
 
+## Recent Changes
+
+- **Content Processing Optimization:**
+    - Changed transcript chunking from character-based to word-based limits
+    - Updated threshold from 30,000 characters to 15,000 words
+    - Implemented word counting logic in `lib/ai.ts` with the `countWords` function
+    - Modified `extractSampleFromTranscript` to preserve beginning, middle, and end portions based on word count
+    - Updated all AI generation functions to use word count threshold instead of character count
+
 ## Next Steps
 
 1. **Complete MCQ Study Interface:**
