@@ -120,20 +120,20 @@ export const prompts = {
          - Cause and Effect (What happens when...?)
          - Examples (Give an example of...)
       
-      2. Use different question formats:
+      3. Use different question formats:
          - Open-ended questions
          - Fill-in-the-blank statements
          - True/False with explanation
          - "Identify the concept" questions
          - Multiple choice questions
          
-      3. Vary the cognitive depth:
+      4. Vary the cognitive depth:
          - Basic recall (remembering facts)
          - Understanding (explaining concepts)
          - Application (using knowledge in new situations)
          - Analysis (breaking down complex ideas)
       
-      4. Make questions:
+      5. Make questions:
          - Based on specific details from the transcript
          - Challenging but clear
          - Focused on key concepts

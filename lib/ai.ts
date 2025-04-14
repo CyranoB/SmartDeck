@@ -258,7 +258,8 @@ export async function generateFlashcards(
   count: number = 10, 
   language: "en" | "fr" = "en",
   existingQuestions: Flashcard[] = [],
-  difficulty: number = 3 // Default to medium difficulty
+  difficulty: number = 3, // Default to medium difficulty
+  onProgress?: (current: number, total: number) => void // Progress callback
 ) {
   try {
     // Check if transcript is too large for a single request (using configurable threshold)
@@ -333,7 +334,8 @@ export async function generateMcqs(
   transcript: string,
   language: "en" | "fr" = "en",
   count: number = 10,
-  difficulty: number = 3 // Default to medium difficulty
+  difficulty: number = 3, // Default to medium difficulty
+  onProgress?: (current: number, total: number) => void // Progress callback
 ): Promise<McqQuestion[]> {
   try {
     // Check if transcript is too large for a single request (using configurable threshold)

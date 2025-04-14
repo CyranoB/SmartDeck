@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useProgress } from "@/contexts/progress-context"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,7 +22,6 @@ export default function McqPage() {
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false)
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState("")
-  const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 1 })
   const [isGenerating, setIsGenerating] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
   const [showDifficultySelector, setShowDifficultySelector] = useState(true)
@@ -30,6 +30,7 @@ export default function McqPage() {
   const { toast } = useToast()
   const { language } = useLanguage()
   const t = translations[language]
+  const { chunkProgress, updateChunkProgress, resetProgress } = useProgress()
 
   // Handle difficulty selection
   const handleDifficultySelected = (difficulty: number) => {
@@ -80,28 +81,26 @@ export default function McqPage() {
       setStatus(t.generating)
       console.log(`Generating MCQs in ${language} with difficulty ${difficultyToUse}`)
       
-      // Set up event listener for chunk progress updates
-      const handleChunkProgress = (event: CustomEvent) => {
-        if (event.detail && event.detail.current && event.detail.total) {
-          setChunkProgress({
-            current: event.detail.current,
-            total: event.detail.total
-          });
-          
-          // Update progress bar based on chunk progress
-          const chunkPercentage = (event.detail.current / event.detail.total) * 100;
-          setProgress(Math.min(90, chunkPercentage));
-        }
+      // Reset progress when starting
+      resetProgress();
+      
+      // Set up progress callback
+      const handleProgress = (current: number, total: number) => {
+        updateChunkProgress(current, total);
+        // Update progress bar based on chunk progress
+        const chunkPercentage = (current / total) * 100;
+        setProgress(Math.min(90, chunkPercentage));
       };
       
-      // Add event listener before API call
-      window.addEventListener('mcqChunkProgress', handleChunkProgress as EventListener);
-      
-      // Make API call
-      const questions = await generateMcqs(JSON.parse(courseData), transcript, language, 10, difficultyToUse);
-      
-      // Remove event listener after API call
-      window.removeEventListener('mcqChunkProgress', handleChunkProgress as EventListener);
+      // Make API call with progress callback
+      const questions = await generateMcqs(
+        JSON.parse(courseData), 
+        transcript, 
+        language, 
+        10, 
+        difficultyToUse,
+        handleProgress
+      );
 
       // Complete the progress
       clearInterval(progressInterval)

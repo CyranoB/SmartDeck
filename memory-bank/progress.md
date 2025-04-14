@@ -1,4 +1,4 @@
-# Progress: AI Study Companion (As of 2025-03-27 ~9:30 PM ET)
+# Progress: AI Study Companion (As of 2025-04-13 ~8:20 PM ET)
 
 ## 1. What Works
 
@@ -13,26 +13,50 @@
     -   Checks word count limits for non-PDF files.
 -   **Non-PDF Processing:** `.txt` and `.docx` files have text extracted directly on the client/server (using `mammoth` likely via `lib/document-converter.ts`) and validated.
 -   **PDF Text Extraction (Server-side):**
-    -   Switched from `pdf-text-extract` to `pdf-parse` to resolve Vercel deployment incompatibility (`pdftotext` dependency).
-    -   API route (`/api/pdf-extract`) receives the file, reads the buffer, extracts text using `pdf-parse` (no temporary files needed).
+    -   Uses `pdf-parse` server-side within API route (`/api/pdf-extract`).
+    -   API route receives the file, reads the buffer, extracts text (no temporary files needed).
     -   Asynchronous job status tracking via Redis (`pdf-job:{jobId}`) is implemented.
-    -   Client polls status endpoint (`/api/pdf-extract/status/[jobId]`) and updates progress UI. The route handler was updated to correctly `await params` for Next.js 15 compatibility.
--   **Error Handling:** Basic error dialog (`components/error-dialog.tsx`) displays errors encountered during validation or processing.
+    -   Client polls status endpoint (`/api/pdf-extract/status/[jobId]`) and updates progress UI.
+-   **Error Handling:** Error dialog (`components/error-dialog.tsx`) displays errors encountered during validation or processing.
 -   **Build Process:** The `pdf-parse` library was patched using `pnpm patch` to remove debug code, resolving build failures.
+-   **JSON Parsing:** Three-tiered parsing strategy for handling AI responses:
+    -   Direct parsing with standard `JSON.parse()`
+    -   Targeted repair for common syntax issues
+    -   Structure-specific pattern extraction for severely malformed responses
 -   **Flashcard Study Flow:**
-    -   Basic flashcard viewer (`app/flashcards/page.tsx`) displays question/answer.
-    -   AI generates flashcards in batches of 10 (`lib/ai.ts`).
-    -   Navigation between cards and batches works.
-    -   Summary page (`app/summary/page.tsx`) shows the last 10 cards studied and provides an option to finish (redirects to course overview). The option to generate more cards ("Do 10 More") has been removed.
-    -   Skeleton loading state implemented for card generation.
+    -   Flashcard viewer (`app/flashcards/page.tsx`) displays question/answer.
+    -   AI generates flashcards in batches of 10.
+    -   Navigation between cards works with proper button layout.
+    -   Summary page (`app/summary/page.tsx`) shows studied cards and provides option to finish.
+    -   Skeleton loading state for initial and subsequent batch generation.
     -   Card counter resets for each batch.
+-   **Difficulty Selection:**
+    -   `DifficultySelector` component with star-based UI (1-5 stars)
+    -   Internationalized descriptions for each difficulty level
+    -   Affects both flashcard and MCQ generation through AI prompts
+    -   Higher difficulties (4-5) trigger smaller batch sizes for more reliable generation
+-   **Progress Tracking:**
+    -   `ProgressContext` for tracking generation progress
+    -   Used for both flashcard and MCQ batch generation
+    -   Shows chunk progress during multi-batch operations
+-   **Theme System:**
+    -   Light mode with warm beige/cream tones
+    -   Dark mode with dark grey backgrounds and orange accents
+    -   Consistent use of CSS variables through Tailwind classes
 
 ## 2. What's Left to Build / Verify
 
--   **AI Integration:** Verify the *MCQ* generation flow (flashcard generation works).
--   **Study Interfaces:** Implement the *MCQ quiz* interface. Flashcard viewer is mostly functional.
+-   **MCQ Implementation:** 
+    -   Backend generation is functional with proper JSON parsing/repair
+    -   MCQ quiz interface (`app/mcq/page.tsx`) needs to be implemented
+    -   MCQ summary page (`app/mcq-summary/page.tsx`) needs to be created
+    -   User answer selection and scoring system need to be implemented
+    -   Results display and feedback mechanism need to be added
+-   **Integration Testing:**
+    -   Full MCQ flow from generation to completion
+    -   Difficulty selection integration with MCQ generation
+    -   Error handling and edge cases for MCQ flow
 -   **Results Display:** Implement the page showing the generated course overview/outline.
--   **Session Management:** Further refinement of study session tracking if needed beyond the current flashcard/summary flow.
 -   **Authentication Flow:** Integrate Clerk authentication more deeply if needed beyond basic setup.
 -   **Deployment:** Configure and test deployment (e.g., on Vercel).
 -   **Robustness/Edge Cases:** Further testing of PDF extraction, AI generation, and the study flows with various inputs and potential errors.
@@ -40,10 +64,14 @@
 
 ## 3. Current Status
 
--   Core file upload and text extraction pipeline is functional for .txt, .docx, and .pdf files.
--   Background processing for PDFs with status polling works.
--   Frontend validation (size, type, word count) is in place.
--   Basic flashcard generation and study flow (including batching, summary, loading states, counter) is functional.
+-   Core file upload and text extraction pipeline is functional for all supported file types.
+-   Background processing for PDFs with status polling works reliably.
+-   Frontend validation (size, type, word count) is comprehensive.
+-   Flashcard generation and study flow is fully functional with proper batching and loading states.
+-   MCQ generation backend is implemented but frontend interface is still in development.
+-   Difficulty selection system is implemented and affects content generation.
+-   Progress tracking context is in place and used for generation feedback.
+-   Theme system has been updated and verified for both light and dark modes.
 
 ## 4. Known Issues / Blockers
 

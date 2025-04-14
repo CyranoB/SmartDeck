@@ -46,37 +46,212 @@ export function isValidJSON(text: string): boolean {
   }
 }
 
-// Attempt to repair incomplete JSON responses
+/**
+ * Simple, targeted JSON repair for known AI response structures
+ * Specifically handles flashcards and MCQ question formats
+ * @param text The potentially malformed JSON string
+ * @returns A hopefully valid JSON string, or the original if repair failed
+ */
 export function attemptJSONRepair(text: string): string {
-  // Check for common incomplete JSON patterns
-  if (text.includes('"flashcards": [') && !text.endsWith(']}')) {
-    try {
-      // Try to find the last complete flashcard
-      const lastCompleteCardIndex = text.lastIndexOf('"},');
-      if (lastCompleteCardIndex > 0) {
-        // Include the last complete card and close the JSON structure
-        const partialJson = text.substring(0, lastCompleteCardIndex + 2);
-        return `${partialJson}]}`;
+  try {
+    // Step 1: Basic cleanup
+    let cleaned = text
+      .replace(/```json|```/g, '')  // Remove markdown code blocks
+      .trim();
+    
+    // Step 2: Determine structure type
+    const isFlashcards = cleaned.includes('"flashcards"');
+    const isMCQs = cleaned.includes('"questions"');
+    
+    // Step 3: Basic JSON structure fixes
+    
+    // Ensure proper JSON object wrapper
+    if (!cleaned.startsWith('{')) cleaned = '{' + cleaned;
+    if (!cleaned.endsWith('}')) cleaned = cleaned + '}';
+    
+    // Fix common JSON syntax issues
+    cleaned = cleaned
+      // Convert single quotes to double quotes in property names
+      .replace(/'([^']+)'(\s*:)/g, '"$1"$2')
+      
+      // Convert single quotes to double quotes in string values
+      .replace(/:\s*'([^']*)'/g, ': "$1"')
+      
+      // Fix unquoted property names
+      .replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3')
+      
+      // Remove trailing commas
+      .replace(/,(\s*[}\]])/g, '$1');
+    
+    // Step 4: Structure-specific fixes
+    if (isFlashcards) {
+      // Ensure flashcards array is properly closed
+      if (cleaned.includes('"flashcards": [') && !cleaned.match(/"flashcards"\s*:\s*\[[\s\S]*\]\s*}/)) {
+        cleaned = ensureArrayClosure(cleaned, 'flashcards');
       }
-    } catch (e) {
-      console.error("Error during JSON repair attempt:", e);
+    }
+    
+    if (isMCQs) {
+      // Ensure questions array is properly closed
+      if (cleaned.includes('"questions": [') && !cleaned.match(/"questions"\s*:\s*\[[\s\S]*\]\s*}/)) {
+        cleaned = ensureArrayClosure(cleaned, 'questions');
+      }
+    }
+    
+    return cleaned;
+  } catch (e) {
+    console.error("JSON repair failed:", e);
+    return text; // Return original if repair fails
+  }
+}
+
+/**
+ * Helper function to ensure arrays are properly closed
+ */
+function ensureArrayClosure(text: string, arrayName: string): string {
+  // Find valid complete objects in the array
+  const validObjects = extractValidObjects(text, arrayName);
+  
+  if (validObjects.length > 0) {
+    // Rebuild with the valid objects we found
+    const arrayStart = text.indexOf(`"${arrayName}": [`);
+    const prefix = text.substring(0, arrayStart + arrayName.length + 5); // +5 for ": ["
+    return `${prefix}${validObjects.join(',')}]}`;
+  }
+  
+  // Fallback: just close the brackets
+  return text.includes('[') ? text + ']}' : text + ']}';
+}
+
+/**
+ * Extract valid JSON objects from partial JSON text
+ */
+function extractValidObjects(text: string, arrayName: string): string[] {
+  const objects: string[] = [];
+  const arraySplit = text.split(`"${arrayName}": [`);
+  
+  if (arraySplit.length < 2) return objects;
+  
+  const arrayContent = arraySplit[1];
+  
+  // Use simplified approach to extract object-like structures
+  let objectsText = '';
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  
+  for (let i = 0; i < arrayContent.length; i++) {
+    const char = arrayContent[i];
+    
+    // Handle string state
+    if (char === '"' && !escape) inString = !inString;
+    if (char === '\\' && !escape) escape = true;
+    else escape = false;
+    
+    // Track object depth
+    if (!inString) {
+      if (char === '{') {
+        if (depth === 0) objectsText += '{'; // Start capturing
+        depth++;
+      } else if (char === '}') {
+        depth--;
+        if (depth === 0) {
+          objectsText += '}|'; // End capturing and add separator
+        } else if (depth > 0) {
+          objectsText += '}';
+        }
+      } else if (depth > 0) {
+        objectsText += char; // Only capture within objects
+      }
+    } else if (depth > 0) {
+      objectsText += char; // Capture string content inside objects
     }
   }
   
-  // Similar handling for MCQ format
-  if (text.includes('"questions": [') && !text.endsWith(']}')) {
+  // Split captured objects and parse each one
+  return objectsText
+    .split('|')
+    .filter(obj => obj.trim().startsWith('{') && obj.trim().endsWith('}'))
+    .map(obj => {
+      try {
+        // Validate by parsing and stringify again for consistent format
+        JSON.parse(obj);
+        return obj;
+      } catch {
+        return ''; // Return empty if invalid
+      }
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Last-resort extraction based on expected structure types
+ */
+function extractKnownStructure<T>(text: string): T | null {
+  // Check for flashcards structure
+  if (text.includes('"question"') && text.includes('"answer"')) {
     try {
-      const lastCompleteQuestionIndex = text.lastIndexOf('"},');
-      if (lastCompleteQuestionIndex > 0) {
-        const partialJson = text.substring(0, lastCompleteQuestionIndex + 2);
-        return `${partialJson}]}`;
+      // Extract flashcard-like objects
+      const cardMatches = text.match(/\{[^{}]*"question"\s*:[^{}]*"answer"\s*:[^{}]*\}/g);
+      
+      if (cardMatches && cardMatches.length > 0) {
+        const cards = cardMatches
+          .map(card => {
+            try {
+              // Fix common issues in individual cards
+              let fixedCard = card
+                .replace(/'/g, '"')
+                .replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+              
+              return JSON.parse(fixedCard);
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean);
+        
+        if (cards.length > 0) {
+          return { flashcards: cards } as unknown as T;
+        }
       }
     } catch (e) {
-      console.error("Error during JSON repair attempt:", e);
+      console.error("Flashcard extraction failed:", e);
     }
   }
   
-  return text;
+  // Check for MCQ structure
+  if (text.includes('"question"') && 
+      (text.includes('"A"') || text.includes('"correct"'))) {
+    try {
+      // Extract MCQ-like objects with regex tuned to MCQ structure
+      const mcqMatches = text.match(/\{[^{}]*"question"\s*:[^{}]*(?:"A"|"correct")[^{}]*\}/g);
+      
+      if (mcqMatches && mcqMatches.length > 0) {
+        const questions = mcqMatches
+          .map(q => {
+            try {
+              // Fix common issues in individual questions
+              let fixedQuestion = q
+                .replace(/'/g, '"')
+                .replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+              
+              return JSON.parse(fixedQuestion);
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean);
+        
+        if (questions.length > 0) {
+          return { questions: questions } as unknown as T;
+        }
+      }
+    } catch (e) {
+      console.error("MCQ extraction failed:", e);
+    }
+  }
+  
+  return null;
 }
 
 // Generic function to handle AI requests and response parsing
@@ -99,26 +274,36 @@ async function makeAIRequest<T>(prompt: string, temperature = 0.5, maxTokens = 2
     try {
       const cleanedText = cleanAIResponse(text.trim());
       
-      // Try parsing directly first
-      if (isValidJSON(cleanedText)) {
+      // Try direct parsing first
+      try {
         return JSON.parse(cleanedText) as T;
+      } catch (initialError) {
+        // Advanced repair attempt
+        console.warn("Initial JSON parsing failed, attempting repair...");
+        const repairedJSON = attemptJSONRepair(cleanedText);
+        
+        try {
+          const result = JSON.parse(repairedJSON) as T;
+          console.log("JSON repair successful");
+          return result;
+        } catch (repairError) {
+          // If repair fails, try last-resort extraction
+          console.error("JSON repair failed:", repairError);
+          console.error("Original text:", cleanedText.substring(0, 500) + (cleanedText.length > 500 ? "..." : ""));
+          console.error("Repaired attempt:", repairedJSON.substring(0, 500) + (repairedJSON.length > 500 ? "..." : ""));
+          
+          // Last resort: try to extract and reconstruct based on expected structure
+          const extractedResult = extractKnownStructure<T>(cleanedText);
+          
+          if (extractedResult) {
+            console.log("Extraction successful as last resort");
+            return extractedResult;
+          }
+          
+          // If all else fails
+          throw new Error("Failed to parse AI response after all repair attempts");
+        }
       }
-      
-      // If direct parsing fails, attempt repair
-      console.warn("JSON parsing failed, attempting repair...");
-      const repairedJSON = attemptJSONRepair(cleanedText);
-      
-      if (isValidJSON(repairedJSON)) {
-        console.log("JSON repair successful");
-        return JSON.parse(repairedJSON) as T;
-      }
-      
-      // If repair fails, throw with detailed error
-      console.error("Parse Error Details:");
-      console.error("Raw AI Response:", text);
-      console.error("Cleaned Text:", cleanedText);
-      console.error("Repair Attempt:", repairedJSON);
-      throw new Error("Failed to parse or repair AI response");
     } catch (parseError) {
       console.error("Parse Error Details:");
       console.error("Raw AI Response:", text);
@@ -158,7 +343,10 @@ async function generateSingleFlashcardBatch(params: GenerateBatchParams): Promis
   return { flashcards: result.flashcards || [] };
 }
 
-export async function generateFlashcards(params: GenerateBatchParams) {
+export async function generateFlashcards(
+  params: GenerateBatchParams,
+  onProgress?: (current: number, total: number) => void
+) {
   // Use provided difficulty or default to medium (3)
   const difficulty = params.difficulty || 3;
   
@@ -185,12 +373,9 @@ export async function generateFlashcards(params: GenerateBatchParams) {
     
     console.log(`Generating batch ${i+1}/${totalBatches} (${currentBatchSize} flashcards)`);
     
-    // Emit event for progress tracking if in browser environment
-    if (typeof window !== 'undefined') {
-      const progressEvent = new CustomEvent('flashcardChunkProgress', {
-        detail: { current: i+1, total: totalBatches }
-      });
-      window.dispatchEvent(progressEvent);
+    // Update progress through callback instead of events
+    if (onProgress) {
+      onProgress(i+1, totalBatches);
     }
     
     // Generate current batch
@@ -235,7 +420,10 @@ async function generateSingleMCQBatch(params: GenerateMCQBatchParams): Promise<{
   return { questions: result.questions || [] };
 }
 
-export async function generateMCQs(params: GenerateMCQBatchParams) {
+export async function generateMCQs(
+  params: GenerateMCQBatchParams,
+  onProgress?: (current: number, total: number) => void
+) {
   // Use provided difficulty or default to medium (3)
   const difficulty = params.difficulty || 3;
   
@@ -263,12 +451,9 @@ export async function generateMCQs(params: GenerateMCQBatchParams) {
     
     console.log(`Generating MCQ batch ${i+1}/${totalBatches} (${currentBatchSize} questions)`);
     
-    // Emit event for progress tracking if in browser environment
-    if (typeof window !== 'undefined') {
-      const progressEvent = new CustomEvent('mcqChunkProgress', {
-        detail: { current: i+1, total: totalBatches }
-      });
-      window.dispatchEvent(progressEvent);
+    // Update progress through callback instead of events
+    if (onProgress) {
+      onProgress(i+1, totalBatches);
     }
     
     // Generate current batch

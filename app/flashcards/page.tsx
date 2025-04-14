@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useProgress } from "@/contexts/progress-context"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,7 +26,8 @@ export default function FlashcardsPage() {
   const [batchStartIndex, setBatchStartIndex] = useState(0)
   const [showAnswer, setShowAnswer] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [chunkProgress, setChunkProgress] = useState({ current: 0, total: 1 })
+  // Use the progress context instead of local state
+  const { chunkProgress, updateChunkProgress, resetProgress } = useProgress()
   const router = useRouter()
   const { toast } = useToast()
   const { language } = useLanguage()
@@ -61,24 +63,20 @@ export default function FlashcardsPage() {
       try {
         console.log("generateMoreFlashcards: Calling generateFlashcards API..."); // Added Log
         
-        // Set up event listener for chunk progress updates
-        const handleChunkProgress = (event: CustomEvent) => {
-          if (event.detail && event.detail.current && event.detail.total) {
-            setChunkProgress({
-              current: event.detail.current,
-              total: event.detail.total
-            });
-          }
-        };
+        // Reset progress when starting
+        resetProgress();
         
-        // Add event listener before API call
-        window.addEventListener('flashcardChunkProgress', handleChunkProgress as EventListener);
-        
-        // Make API call
-        newFlashcards = await generateFlashcards(courseData, transcript, batchSize, contentLanguage, flashcards, difficultyToUse);
-        
-        // Remove event listener after API call
-        window.removeEventListener('flashcardChunkProgress', handleChunkProgress as EventListener);
+        // Make API call with progress callback
+        newFlashcards = await generateFlashcards(
+          courseData, 
+          transcript, 
+          batchSize, 
+          contentLanguage, 
+          flashcards, 
+          difficultyToUse,
+          // Pass progress callback
+          updateChunkProgress
+        );
         console.log("generateMoreFlashcards: API call successful."); // Added Log
       } catch (apiError) {
         console.error("generateMoreFlashcards: generateFlashcards API call failed:", apiError); // Enhanced Error Logging

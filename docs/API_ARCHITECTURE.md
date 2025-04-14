@@ -107,11 +107,17 @@ The middleware module provides:
 - IP validation and normalization
 - Request body validation
 - Rate limiting implementation
-- Type definitions for middleware operations
+    - Type definitions for middleware operations
+    - Validates difficulty parameters for both flashcard and MCQ generation
 
 ```typescript
 export function isValidIP(ip: string): boolean {
   // Validate IP format
+}
+
+export function validateDifficulty(difficulty?: number): number {
+  // Validate and normalize difficulty level (1-5)
+  // Returns default (3) if not provided or invalid
 }
 
 export async function applyRateLimit(ip: string): Promise<RateLimitResult> {
@@ -144,7 +150,11 @@ The application implements a comprehensive error handling strategy:
 
 A key improvement in the refactored code is the robust handling of AI responses:
 - The `cleanAIResponse` function removes markdown formatting
-- JSON parsing is wrapped in try/catch blocks with detailed error logging
+- JSON parsing follows a three-tiered approach:
+  1. Direct parsing with standard `JSON.parse()`
+  2. Simple repair for common JSON syntax issues
+  3. Structure-specific pattern extraction for severely malformed responses
+- Specialized extraction for both flashcard and MCQ formats
 - The service layer provides type-safe parsing of responses
 
 ## Rate Limiting
@@ -155,6 +165,25 @@ Rate limiting is implemented using:
 - Proper HTTP headers for rate limit information
 - Graceful handling of rate limit errors
 
+## Difficulty Management
+
+The API incorporates a difficulty management system:
+- **Type Definition**: Uses `DifficultyLevel` type (1-5) for type safety
+- **Parameter Validation**: Validates and normalizes difficulty input in middleware
+- **Batch Processing**: Adjusts batch sizes based on difficulty (smaller batches for higher difficulties)
+- **Prompt Construction**: Modifies AI prompts based on difficulty level:
+  - Lower difficulties (1-2): Simpler vocabulary, more basic concepts
+  - Medium difficulty (3): Standard academic terminology
+  - Higher difficulties (4-5): Advanced vocabulary, complex concepts
+- **Default Handling**: Falls back to medium difficulty (3) when not specified
+
+## Progress Tracking
+
+For operations that may require multiple API calls (like generating large batches):
+- Controllers support progress callback parameters
+- Services track and report generation progress
+- This enables frontend progress indicators via `ProgressContext`
+
 ## Future Improvements
 
 Potential future improvements to the architecture:
@@ -163,3 +192,4 @@ Potential future improvements to the architecture:
 3. **Metrics Collection**: Add performance metrics collection
 4. **Caching Layer**: Add response caching for frequently requested operations
 5. **Circuit Breaker**: Implement circuit breaker pattern for AI service calls
+6. **Enhanced Progress Tracking**: Add more granular progress updates for PDF extraction

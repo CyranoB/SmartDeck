@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { ClerkProvider } from "@clerk/nextjs"
 import { frFR } from "@clerk/localizations"
-import { ThemeProvider } from "@/components/theme-provider"
+import { Providers } from "./providers"
 import { LanguageProvider } from "@/hooks/use-language"
 import { Toaster } from "@/components/ui/toaster"
 import ServerConfigCheck from "@/components/server-config-check"
@@ -28,12 +28,12 @@ export default function RootLayout({
   // Wrap content with ClerkProvider only if Clerk is enabled
   const content = (
     <ServerConfigCheck>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <Providers>
         <LanguageProvider>
           {children}
           <Toaster />
         </LanguageProvider>
-      </ThemeProvider>
+      </Providers>
     </ServerConfigCheck>
   );
 

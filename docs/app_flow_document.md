@@ -96,22 +96,48 @@ Before any user interaction, the application performs a server-side check for pr
 - Stores all studied flashcards in `sessionStorage` when stopped
 - Redirects to `/summary` when user stops the session
 
+### 3b. Results Page - Difficulty Selection
+
+**Path**: `/app/results/page.tsx`
+
+**User Flow**:
+- After choosing the study mode (flashcards or MCQ), user selects a difficulty level
+- User sees a 1-5 star rating system with descriptive tooltip on hover
+- Each difficulty level has a different description
+- User selects the appropriate level for their needs
+- User clicks "I'm Ready" to proceed with their chosen mode and difficulty
+
+**Technical Implementation**:
+- Uses `DifficultySelector` component from `/components/difficulty-selector.tsx`
+- Star-based UI with keyboard navigation support (arrow keys)
+- Internationalized descriptions from `lib/translations.ts` 
+- Selected difficulty stored in state and passed to generation API calls
+- Affects AI prompt construction and batch sizing
+
 ### 4b. MCQ Page
 
 **Path**: `/app/mcq/page.tsx`
 
 **User Flow**:
 - User views multiple choice questions generated from the document
+- Progress indicator shows current generation status if questions are being created in batches
 - User selects an answer from four options (A, B, C, D)
 - User receives immediate feedback on their answer choice with clear visual indicators:
   - Correct answers highlighted in emerald/green with improved contrast
   - Incorrect answers highlighted in rose/red with improved contrast
 - User can navigate to the next question or stop the session
 - Additional questions are generated automatically as needed
+- Question difficulty matches user's selected difficulty level
 
 **Technical Implementation**:
 - Retrieves course data and transcript from `sessionStorage`
-- Uses `generateMcqs()` to create a batch of questions
+- Uses `generateMcqs()` to create a batch of questions based on selected difficulty
+- Difficulty affects question complexity through the AI prompts system:
+  - Lower difficulties (1-2): Simple vocabulary, straightforward questions
+  - Medium difficulty (3): Standard academic vocabulary, moderate complexity
+  - Higher difficulties (4-5): Complex questions, advanced vocabulary, subtle distinctions
+- For higher difficulties (4-5), smaller batch sizes are used for improved reliability
+- ProgressContext used to track and display generation progress for multi-batch operations
 - Handles answer selection and validation
 - Provides enhanced visual feedback for correct/incorrect answers:
   - Light mode: emerald-100/rose-100 backgrounds with emerald-500/rose-500 borders

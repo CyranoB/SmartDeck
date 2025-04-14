@@ -11,6 +11,8 @@
 | Data Storage | Client-side sessionStorage | Temporary session data without server persistence |
 | Architecture | Serverless | Scalable, cost-effective processing on demand |
 | Configuration | Environment Variables | Configurable limits for file size and word counts |
+| Progress Tracking | React Context API | Tracks generation progress across components |
+| Difficulty System | 1-5 Star Rating | Configurable content complexity for study materials |
 
 ## User Journey Map
 
@@ -36,8 +38,13 @@
 │                                                             │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
 │  │ React UI    │  │ Session     │  │ User Interactions   │  │
-│  │ Components  │  │ Storage     │  │ (Next, Prev, Toggle)│  │
+│  │ Components  │  │ Storage     │  │ (Next, Prev, Select)│  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
+│                                                             │
+│  ┌─────────────────────┐  ┌───────────────────────────────┐ │
+│  │ Context Providers   │  │ Difficulty & Progress         │ │
+│  │ (Theme, Progress)   │  │ Management Components         │ │
+│  └─────────────────────┘  └───────────────────────────────┘ │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
                             │
@@ -114,12 +121,17 @@ These limits ensure optimal performance and prevent resource exhaustion while al
 
 ### 3. MCQ Generation
 
-1. User selects "Multiple Choice" mode
-2. Request sent to `/api/ai` with `type: "generate-mcq-batch"`
-3. Controller processes request and calls service
-4. AI service generates questions with answer options
-5. Response returned to client for interactive quiz
-6. User performance tracked for summary
+1. User selects "Multiple Choice" mode and difficulty level (1-5 stars)
+2. Request sent to `/api/ai` with `type: "generate-mcq-batch"` and `difficulty` parameter
+3. Controller processes request and calls service with parameters
+4. AI service generates questions with answer options based on difficulty:
+   - Lower difficulty (1-2): Simpler vocabulary, shorter questions, more obvious answers
+   - Medium difficulty (3): Standard academic level questions
+   - Higher difficulty (4-5): Complex questions, advanced vocabulary, subtle distinctions
+   - Higher difficulties automatically use smaller batch sizes for more reliable generation
+5. Progress context updates UI with generation progress
+6. Response returned to client for interactive quiz
+7. User performance tracked for summary
 
 ## Documentation Index
 
