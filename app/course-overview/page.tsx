@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { useLanguage } from "@/hooks/use-language"
 import { translations } from "@/lib/translations"
 import { AuthHeader } from "@/components/auth-header"
@@ -16,7 +16,6 @@ interface CourseData {
 export default function CourseOverviewPage() {
   const [courseData, setCourseData] = useState<CourseData | null>(null)
   const router = useRouter()
-  const { toast } = useToast()
   const { language } = useLanguage()
   const t = translations[language]
 
@@ -24,10 +23,8 @@ export default function CourseOverviewPage() {
     const data = sessionStorage.getItem("courseData")
 
     if (!data) {
-      toast({
-        title: t.errorTitle,
+      toast.error(t.errorTitle, {
         description: t.noResults,
-        variant: "destructive",
       })
       router.push("/start")
       return

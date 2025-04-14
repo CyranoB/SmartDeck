@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { useLanguage } from "@/hooks/use-language"
 import { translations } from "@/lib/translations"
 import { McqSessionData } from "@/types/mcq"
@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils"
 export default function McqSummaryPage() {
   const [sessionData, setSessionData] = useState<McqSessionData | null>(null)
   const router = useRouter()
-  const { toast } = useToast()
   const { language } = useLanguage()
   const t = translations[language]
 
@@ -21,10 +20,8 @@ export default function McqSummaryPage() {
     const data = sessionStorage.getItem("mcqSessionData")
 
     if (!data) {
-      toast({
-        title: t.errorTitle,
+      toast.error(t.errorTitle, {
         description: t.noResults,
-        variant: "destructive",
       })
       router.push("/start")
       return
@@ -148,4 +145,4 @@ export default function McqSummaryPage() {
       </div>
     </div>
   )
-} 
+}

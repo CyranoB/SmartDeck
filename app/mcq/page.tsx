@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Progress } from "@/components/ui/progress"
 import { Loader2 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { useLanguage } from "@/hooks/use-language"
 import { translations } from "@/lib/translations"
 import { generateMcqs } from "@/lib/ai"
@@ -27,7 +27,6 @@ export default function McqPage() {
   const [showDifficultySelector, setShowDifficultySelector] = useState(true)
   const [selectedDifficulty, setSelectedDifficulty] = useState<number>(0)
   const router = useRouter()
-  const { toast } = useToast()
   const { language } = useLanguage()
   const t = translations[language]
   const { chunkProgress, updateChunkProgress, resetProgress } = useProgress()
@@ -51,10 +50,8 @@ export default function McqPage() {
     const transcript = sessionStorage.getItem("transcript")
 
     if (!courseData || !transcript) {
-      toast({
-        title: t.errorTitle,
+      toast.error(t.errorTitle, {
         description: t.noResults,
-        variant: "destructive",
       })
       router.push("/")
       return
@@ -120,10 +117,8 @@ export default function McqPage() {
       }, 1000)
     } catch (error) {
       console.error("Error generating MCQs:", error)
-      toast({
-        title: t.errorTitle,
+      toast.error(t.errorTitle, {
         description: t.flashcardError,
-        variant: "destructive",
       })
       router.push("/course-overview")
     } finally {

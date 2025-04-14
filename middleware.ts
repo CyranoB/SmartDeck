@@ -4,7 +4,6 @@ const isPublicRoute = createRouteMatcher([
   '/', // Root page
   '/sign-in(.*)', // Sign-in routes
   '/sign-up(.*)', // Sign-up routes
-  '/api/pdf-extract', // Corrected API endpoint path
 ])
 
 // --- RESTORED CLERK MIDDLEWARE ---

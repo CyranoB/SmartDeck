@@ -5,7 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs"
 import { frFR } from "@clerk/localizations"
 import { Providers } from "./providers"
 import { LanguageProvider } from "@/hooks/use-language"
-import { Toaster } from "@/components/ui/toaster"
+import { Toaster } from "@/components/ui/sonner"
 import ServerConfigCheck from "@/components/server-config-check"
 import "./globals.css"
 

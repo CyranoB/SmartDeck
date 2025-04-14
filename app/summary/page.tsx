@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { useLanguage } from "@/hooks/use-language"
 import { translations } from "@/lib/translations"
 
@@ -17,7 +17,6 @@ export default function SummaryPage() {
   const [flashcards, setFlashcards] = useState<Flashcard[]>([])
   const [lastCompletedIndex, setLastCompletedIndex] = useState(0)
   const router = useRouter()
-  const { toast } = useToast()
   const { language } = useLanguage()
   const t = translations[language]
 
@@ -26,10 +25,8 @@ export default function SummaryPage() {
     const lastIndex = sessionStorage.getItem("lastCompletedIndex")
 
     if (!flashcardsData) {
-      toast({
-        title: t.errorTitle,
+      toast.error(t.errorTitle, {
         description: t.noFlashcards,
-        variant: "destructive",
       })
       router.push("/")
       return

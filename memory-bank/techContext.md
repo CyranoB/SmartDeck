@@ -5,6 +5,7 @@
 -   **Framework:** Next.js (v15.2.3) with App Router
 -   **Language:** TypeScript (v5)
 -   **UI Library:** React (v19), Shadcn UI
+-   **Toast Notifications:** Sonner (v1.7.1) - Replaced default Shadcn toast system for more flexible notifications with multiple toasts, better styling options, and improved UX
 -   **Styling:** Tailwind CSS
 -   **Package Manager:** pnpm (v10.4.1)
 -   **AI Integration:** `@ai-sdk/openai` (v1.2.5), `ai` (v4.1.61)

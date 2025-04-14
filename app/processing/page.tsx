@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { analyzeTranscript } from "@/lib/ai"
 import { useLanguage } from "@/hooks/use-language"
 import { translations } from "@/lib/translations"
@@ -16,7 +16,6 @@ export default function ProcessingPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
   const router = useRouter()
-  const { toast } = useToast()
   const { language } = useLanguage()
   const t = translations[language]
 
@@ -28,10 +27,8 @@ export default function ProcessingPage() {
     // Get transcript from session storage
     const transcript = sessionStorage.getItem("transcript")
     if (!transcript) {
-      toast({
-        title: t.errorTitle,
+      toast.error(t.errorTitle, {
         description: t.noTranscript,
-        variant: "destructive",
       })
       router.push("/")
       return
@@ -73,10 +70,8 @@ export default function ProcessingPage() {
       }, 1000)
     } catch (error) {
       console.error("Processing error:", error)
-      toast({
-        title: t.errorTitle,
+      toast.error(t.errorTitle, {
         description: error instanceof Error ? error.message : t.aiError,
-        variant: "destructive",
       })
       router.push("/")
     } finally {
