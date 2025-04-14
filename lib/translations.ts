@@ -145,7 +145,16 @@ export const translations = {
     scoreLabel: "Score",
     reviewAnswers: "Review Answers",
     yourAnswer: "Your Answer",
-    correctAnswerLabel: "Correct Answer"
+    correctAnswerLabel: "Correct Answer",
+    
+    // Difficulty Selector
+    selectDifficulty: "Select difficulty level",
+    difficultyHint: "Hover over stars to see difficulty descriptions",
+    difficultyDescription1: "Very Simple - Elementary level questions",
+    difficultyDescription2: "Easy - Middle school level questions",
+    difficultyDescription3: "Medium - High school level questions", 
+    difficultyDescription4: "Hard - Undergraduate level questions",
+    difficultyDescription5: "Expert - Graduate/PhD level questions"
   },
   fr: {
     // Homepage
@@ -293,6 +302,15 @@ export const translations = {
     scoreLabel: "Score",
     reviewAnswers: "Revoir les Réponses",
     yourAnswer: "Votre Réponse",
-    correctAnswerLabel: "Bonne Réponse"
+    correctAnswerLabel: "Bonne Réponse",
+    
+    // Difficulty Selector
+    selectDifficulty: "Sélectionnez le niveau de difficulté",
+    difficultyHint: "Survolez les étoiles pour voir les descriptions de difficulté",
+    difficultyDescription1: "Très Simple - Questions de niveau primaire",
+    difficultyDescription2: "Facile - Questions de niveau collège",
+    difficultyDescription3: "Moyen - Questions de niveau lycée",
+    difficultyDescription4: "Difficile - Questions de niveau licence",
+    difficultyDescription5: "Expert - Questions de niveau master/doctorat"
   }
 } as const

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useProgress } from "@/contexts/progress-context"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,6 +11,7 @@ import { useLanguage } from "@/hooks/use-language"
 import { translations } from "@/lib/translations"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AuthHeader } from "@/components/auth-header"
+import { DifficultySelector } from "@/components/difficulty-selector"
 
 interface Flashcard {
   question: string
@@ -24,28 +26,57 @@ export default function FlashcardsPage() {
   const [batchStartIndex, setBatchStartIndex] = useState(0)
   const [showAnswer, setShowAnswer] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  // Use the progress context instead of local state
+  const { chunkProgress, updateChunkProgress, resetProgress } = useProgress()
   const router = useRouter()
   const { toast } = useToast()
   const { language } = useLanguage()
   const t = translations[language]
   const [contentLanguage, setContentLanguage] = useState<"en" | "fr">("en")
   const [isInitialized, setIsInitialized] = useState(false)
+  const [showDifficultySelector, setShowDifficultySelector] = useState(true)
+  const [selectedDifficulty, setSelectedDifficulty] = useState<number>(0)
   
+  // Handle difficulty selection
+  const handleDifficultySelected = (difficulty: number) => {
+    setSelectedDifficulty(difficulty)
+    setShowDifficultySelector(false)
+    // Store the selected difficulty in session storage
+    sessionStorage.setItem("selectedDifficulty", difficulty.toString())
+    // Trigger flashcard generation
+    generateMoreFlashcards(difficulty)
+  }
+
   // Memoize the generateMoreFlashcards function to prevent recreation on each render
-  const generateMoreFlashcards = useCallback(async () => {
+  const generateMoreFlashcards = useCallback(async (difficulty?: number) => {
     setIsLoading(true)
-    console.log("generateMoreFlashcards: Starting generation..."); // Added Log
+    console.log(`generateMoreFlashcards: Starting generation with difficulty ${difficulty || selectedDifficulty}...`);
 
     try {
       const courseData = JSON.parse(sessionStorage.getItem("courseData") || "{}")
       const transcript = sessionStorage.getItem("transcript") || ""
       const batchSize = 10 // Number of flashcards to generate at once
+      const difficultyToUse = difficulty !== undefined ? difficulty : selectedDifficulty || 3
 
       // Use the content language for generating flashcards
       let newFlashcards;
       try {
         console.log("generateMoreFlashcards: Calling generateFlashcards API..."); // Added Log
-        newFlashcards = await generateFlashcards(courseData, transcript, batchSize, contentLanguage, flashcards);
+        
+        // Reset progress when starting
+        resetProgress();
+        
+        // Make API call with progress callback
+        newFlashcards = await generateFlashcards(
+          courseData, 
+          transcript, 
+          batchSize, 
+          contentLanguage, 
+          flashcards, 
+          difficultyToUse,
+          // Pass progress callback
+          updateChunkProgress
+        );
         console.log("generateMoreFlashcards: API call successful."); // Added Log
       } catch (apiError) {
         console.error("generateMoreFlashcards: generateFlashcards API call failed:", apiError); // Enhanced Error Logging
@@ -65,7 +96,7 @@ export default function FlashcardsPage() {
       setIsLoading(false);
       console.log("generateMoreFlashcards: Finished generation attempt."); // Added Log
     }
-  }, [contentLanguage, t, toast])
+  }, [contentLanguage, t, toast, selectedDifficulty])
 
   // Function to move to the next flashcard
   const goToNextFlashcard = useCallback(async () => {
@@ -195,8 +226,8 @@ export default function FlashcardsPage() {
         } else {
             console.log("FlashcardsPage useEffect[generate/load]: No stored flashcards found for continuing session."); // Added Log
         }
-      } else if (flashcards.length === 0) {
-        // New session - generate first batch
+      } else if (flashcards.length === 0 && !showDifficultySelector) {
+        // New session - generate first batch (only if difficulty has been selected)
         console.log("FlashcardsPage useEffect[generate/load]: Starting new session, generating first batch..."); // Added Log
         try {
             const success = await generateMoreFlashcards(); // generateMoreFlashcards now handles its own loading state and errors
@@ -219,7 +250,7 @@ export default function FlashcardsPage() {
 
     generateOrLoadFlashcards();
   // Rerun when isInitialized changes, or when contentLanguage changes (to potentially regenerate if needed)
-  }, [isInitialized, contentLanguage, t, toast, flashcards.length]); // Added flashcards.length dependency
+  }, [isInitialized, contentLanguage, t, toast, flashcards.length, showDifficultySelector]); // Added dependencies
 
   const handleStop = () => {
     console.log(`handleStop: Stopping at index ${currentIndex}. Storing ${flashcards.length} cards.`); // Added Log
@@ -246,7 +277,13 @@ export default function FlashcardsPage() {
         <div className="w-full max-w-md space-y-8">
           <h1 className="text-3xl font-bold text-center">{t.flashcardsTitle}</h1>
 
-          {isLoading ? (
+          {showDifficultySelector ? (
+            <Card className="w-full">
+              <CardContent className="pt-6">
+                <DifficultySelector onDifficultySelected={handleDifficultySelected} />
+              </CardContent>
+            </Card>
+          ) : isLoading ? (
             <Card className="w-full min-h-[16rem]">
               <CardHeader>
                 <Skeleton className="h-8 w-2/3 mx-auto" />
@@ -256,7 +293,9 @@ export default function FlashcardsPage() {
                 <Skeleton className="h-4 w-5/6" />
                 <Skeleton className="h-4 w-4/6" />
                 <p className="text-sm text-muted-foreground mt-4">
-                  {t.generating}
+                  {chunkProgress.total > 1 
+                    ? `${t.generating} (${chunkProgress.current}/${chunkProgress.total})` 
+                    : t.generating}
                 </p>
               </CardContent>
               <CardFooter className="flex justify-center">
