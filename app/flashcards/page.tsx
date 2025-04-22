@@ -5,7 +5,7 @@ import { useProgress } from "@/contexts/progress-context"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { generateFlashcards } from "@/lib/ai"
 import { useLanguage } from "@/hooks/use-language"
 import { translations } from "@/lib/translations"
@@ -29,7 +29,6 @@ export default function FlashcardsPage() {
   // Use the progress context instead of local state
   const { chunkProgress, updateChunkProgress, resetProgress } = useProgress()
   const router = useRouter()
-  const { toast } = useToast()
   const { language } = useLanguage()
   const t = translations[language]
   const [contentLanguage, setContentLanguage] = useState<"en" | "fr">("en")
@@ -80,10 +79,8 @@ export default function FlashcardsPage() {
         console.log("generateMoreFlashcards: API call successful."); // Added Log
       } catch (apiError) {
         console.error("generateMoreFlashcards: generateFlashcards API call failed:", apiError); // Enhanced Error Logging
-        toast({
-          title: t.errorTitle,
+        toast.error(t.errorTitle, {
           description: `${t.flashcardError}: ${apiError instanceof Error ? apiError.message : 'Unknown API error'}`,
-          variant: "destructive",
         });
         return false; // Indicate failure
       }
@@ -131,10 +128,8 @@ export default function FlashcardsPage() {
 
       if (!courseData) {
         console.log("FlashcardsPage useEffect[mount]: No courseData found in sessionStorage. Redirecting."); // Added Log
-        toast({
-          title: t.errorTitle,
+        toast.error(t.errorTitle, {
           description: t.noResults,
-          variant: "destructive",
         })
         router.push("/")
         return
@@ -214,10 +209,8 @@ export default function FlashcardsPage() {
             setFlashcards(prev => [...prev, ...newFlashcards]);
           } catch (error) {
             console.error("FlashcardsPage useEffect[generate/load]: Error during continuing session generation:", error); // Enhanced Error Logging
-            toast({
-              title: t.errorTitle,
+            toast.error(t.errorTitle, {
               description: `${t.flashcardError}: ${error instanceof Error ? error.message : 'Unknown generation error'}`,
-              variant: "destructive",
             });
             // Consider redirecting or showing a persistent error state here
           } finally {
@@ -241,7 +234,7 @@ export default function FlashcardsPage() {
             }
         } catch (error) {
              console.error("FlashcardsPage useEffect[generate/load]: Unexpected error calling generateMoreFlashcards:", error); // Added Log for safety
-             toast({ title: t.errorTitle, description: t.flashcardError, variant: "destructive" });
+             toast.error(t.errorTitle, { description: t.flashcardError });
         }
       } else {
          console.log(`FlashcardsPage useEffect[generate/load]: Already have ${flashcards.length} cards, no action needed.`); // Added Log

@@ -3,14 +3,13 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
+import { toast } from "sonner"
 import { useLanguage } from "@/hooks/use-language"
 import { translations } from "@/lib/translations"
 
 export function LanguageToggle() {
   const { language, setLanguage } = useLanguage()
   const router = useRouter()
-  const { toast } = useToast()
   const t = translations[language]
   const [isProcessing, setIsProcessing] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -37,24 +36,21 @@ export function LanguageToggle() {
 
     if (currentPath === "/processing") {
       // Don't allow language change during processing
-      toast({
-        title: t.warningTitle,
+      toast.warning(t.warningTitle, {
         description: t.noLanguageChangeProcessing,
         duration: 3000,
       })
       return
     }
 
-    toast({
-      title: newLanguage === "en" ? "Language Changed" : "Langue Changée",
+    toast.success(newLanguage === "en" ? "Language Changed" : "Langue Changée", {
       description: newLanguage === "en" ? "Interface is now in English" : "L'interface est maintenant en français",
       duration: 2000,
     })
 
     // If we're in the middle of a session, warn the user that content language won't change
     if (currentPath !== "/" && currentPath !== "/config") {
-      toast({
-        title: t.noteTitle,
+      toast.info(t.noteTitle, {
         description: t.contentLanguageNote,
         duration: 4000,
       })

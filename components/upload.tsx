@@ -8,7 +8,7 @@ import { UploadIcon, FileText, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { useToast } from "@/components/ui/use-toast"; 
+import { toast } from "@/lib/toast"; 
 import { translations } from "@/lib/translations"
 import { useLanguage } from "@/hooks/use-language"
 import { convertDocumentToText } from "@/lib/document-converter"
@@ -28,11 +28,11 @@ export function Upload() {
     message: ""
   })
   const router = useRouter()
-  const { toast } = useToast()
   const { language } = useLanguage()
   const t = translations[language]
   const [jobId, setJobId] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [loadingToastId, setLoadingToastId] = useState<string | number | null>(null)
 
   const showError = (title: string, message: string) => {
     console.log('🚨 Showing error dialog:', title, message);
@@ -67,17 +67,37 @@ export function Upload() {
       
       if (data.status !== 'completed' || !data.result) {
         console.error("❌ PDF processing not completed or result missing:", data);
+        
+        // Dismiss any existing loading toast
+        if (loadingToastId !== null) {
+          toast.dismiss(loadingToastId);
+          setLoadingToastId(null);
+        }
+        
         showError(t.errorTitle, 'PDF processing not completed or result missing.');
         return null;
       }
 
       if (!validateWordCount(data.result, config.minWordCount, config.maxWordCount, t, showError)) {
+        // Dismiss any existing loading toast
+        if (loadingToastId !== null) {
+          toast.dismiss(loadingToastId);
+          setLoadingToastId(null);
+        }
+        
         return null;
       }
 
       return data.result;
     } catch (error) {
       console.error('❌ Error fetching PDF result:', error);
+      
+      // Dismiss any existing loading toast
+      if (loadingToastId !== null) {
+        toast.dismiss(loadingToastId);
+        setLoadingToastId(null);
+      }
+      
       showError(t.errorTitle, error instanceof Error ? error.message : t.errorProcessing);
       return null;
     }
@@ -96,13 +116,26 @@ export function Upload() {
           clearInterval(pollInterval)
           setIsProcessing(false)
           setExtractionProgress(100)
-          toast({
-            title: t.processingComplete,
+          
+          // Dismiss the loading toast if it exists
+          if (loadingToastId !== null) {
+            toast.dismiss(loadingToastId);
+            setLoadingToastId(null);
+          }
+          
+          toast.success(t.processingComplete, {
             description: t.processingCompleteDesc,
           })
         } else if (data.status === 'failed') {
           clearInterval(pollInterval)
           setIsProcessing(false)
+          
+          // Dismiss the loading toast if it exists
+          if (loadingToastId !== null) {
+            toast.dismiss(loadingToastId);
+            setLoadingToastId(null);
+          }
+          
           // Reset file state if PDF processing fails
           setFile(null); 
           setJobId(null);
@@ -114,6 +147,13 @@ export function Upload() {
       } catch (error) {
         clearInterval(pollInterval)
         setIsProcessing(false)
+        
+        // Dismiss the loading toast if it exists
+        if (loadingToastId !== null) {
+          toast.dismiss(loadingToastId);
+          setLoadingToastId(null);
+        }
+        
         // Reset file state on fetch error
         setFile(null);
         setJobId(null);
@@ -176,6 +216,12 @@ export function Upload() {
     setExtractionProgress(0);
     setIsProcessing(false);
     setIsUploading(false);
+    
+    // Dismiss any existing loading toast
+    if (loadingToastId !== null) {
+      toast.dismiss(loadingToastId);
+      setLoadingToastId(null);
+    }
 
     console.log('🔍 [UPLOAD] Validating file:', selectedFile.name, 'Size:', (selectedFile.size / 1024 / 1024).toFixed(2), 'MB');
 
@@ -225,46 +271,49 @@ export function Upload() {
         const { jobId: receivedJobId } = await response.json();
         setJobId(receivedJobId);
           
-        toast({
-          title: t.processingPdf,
+        const id = toast.loading(t.processingPdf, {
           description: t.processingPdfDesc,
         });
+        setLoadingToastId(id);
       } else {
-        // --- Process Non-PDF Immediately ---
-        console.log('📄 [UPLOAD] Processing non-PDF file...');
-        const text = await convertDocumentToText(selectedFile);
-        console.log('✅ [UPLOAD] Document text extracted, length:', text.length);
-
-        const wordCount = text.trim().split(/\s+/).length;
-        console.log('📝 [UPLOAD] Word count:', wordCount);
-
-        if (wordCount < config.minWordCount) {
-          console.warn('⚠️ [UPLOAD] File below minimum word count:', wordCount);
-          const errorMessage = t.errorWordCountMin.replace('{count}', wordCount.toLocaleString());
-          showError(t.errorTitle, errorMessage);
-          setFile(null); // Reset file if validation fails
-          return;
-        }
-
-        if (wordCount > config.maxWordCount) {
-          console.warn('⚠️ [UPLOAD] File exceeds word limit:', wordCount);
-          const errorMessage = t.errorWordCount.replace('{count}', wordCount.toLocaleString());
-          showError(t.errorTitle, errorMessage);
-          setFile(null); // Reset file if validation fails
-          return;
-        }
-        
-        setValidatedText(text); // Store validated text
-        console.log('✅ [UPLOAD] Non-PDF file validated and text stored');
-        toast({
-          title: t.fileReadyTitle,
-          description: t.fileReadyDesc,
-        });
+        // --- Process Non-PDF Immediately with toast.promise ---
+        const promise = toast.promise(
+          (async () => {
+            const text = await convertDocumentToText(selectedFile);
+            const wordCount = text.trim().split(/\s+/).length;
+            if (wordCount < config.minWordCount) {
+              const errorMessage = t.errorWordCountMin.replace('{count}', wordCount.toLocaleString());
+              showError(t.errorTitle, errorMessage);
+              throw new Error('ValidationError');
+            }
+            if (wordCount > config.maxWordCount) {
+              const errorMessage = t.errorWordCount.replace('{count}', wordCount.toLocaleString());
+              showError(t.errorTitle, errorMessage);
+              throw new Error('ValidationError');
+            }
+            return text;
+          })(),
+          {
+            loading: t.processingPdf,
+            success: t.fileReadyTitle,
+            error: t.errorTitle,
+            description: t.fileReadyDesc,
+          }
+        );
+        const _text = await promise.unwrap();
+        setValidatedText(_text);
       }
     } catch (error) {
       console.error('❌ [UPLOAD] Error processing file:', error);
       setFile(null); // Reset file state on error
       setIsProcessing(false); // Ensure processing indicator stops
+      
+      // Dismiss any existing loading toast
+      if (loadingToastId !== null) {
+        toast.dismiss(loadingToastId);
+        setLoadingToastId(null);
+      }
+      
       showError(t.errorTitle, error instanceof Error ? error.message : t.errorProcessing);
     }
   }
@@ -312,6 +361,13 @@ export function Upload() {
       router.push("/processing");
     } catch (error) {
       console.error('❌ [UPLOAD] Proceeding error:', error);
+      
+      // Dismiss any existing loading toast
+      if (loadingToastId !== null) {
+        toast.dismiss(loadingToastId);
+        setLoadingToastId(null);
+      }
+      
       showError(t.errorTitle, error instanceof Error ? error.message : t.errorProcessing);
       setIsUploading(false);
     } finally {
@@ -380,6 +436,12 @@ export function Upload() {
                         setExtractionProgress(0); 
                         setIsProcessing(false); 
                         setIsUploading(false);
+                        
+                        // Dismiss any existing loading toast
+                        if (loadingToastId !== null) {
+                          toast.dismiss(loadingToastId);
+                          setLoadingToastId(null);
+                        }
                       }}>
                         {t.change}
                       </Button>

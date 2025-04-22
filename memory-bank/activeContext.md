@@ -40,6 +40,14 @@ Implementing and refining the MCQ (Multiple-Choice Questions) feature across the
 
 ## Recent Changes
 
+- **Toast Notification System Upgrade:**
+    - Replaced Shadcn UI's default toast system with Sonner (v1.7.1)
+    - Removed unused toast hook implementations (`hooks/use-toast.ts`, `hooks/use-toast-new.ts`, `hooks/use-toast-shadcn.ts`)
+    - Removed Shadcn toast components (`components/ui/toast.tsx`, `components/ui/toaster.tsx`, `components/ui/use-toast.ts`)
+    - Updated all components to use Sonner's direct toast function instead of the hook pattern
+    - Added toast variants (success, error, warning, info) for better visual feedback
+    - Updated memory-bank documentation to reflect the change
+
 - **Content Processing Optimization:**
     - Changed transcript chunking from character-based to word-based limits
     - Updated threshold from 30,000 characters to 15,000 words
