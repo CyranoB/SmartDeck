@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { useLanguage } from "@/hooks/use-language"
 import { translations } from "@/lib/translations"
 

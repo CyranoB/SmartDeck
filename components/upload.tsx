@@ -8,7 +8,7 @@ import { UploadIcon, FileText, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { toast } from "sonner"; 
+import { toast } from "@/lib/toast"; 
 import { translations } from "@/lib/translations"
 import { useLanguage } from "@/hooks/use-language"
 import { convertDocumentToText } from "@/lib/document-converter"
@@ -276,35 +276,32 @@ export function Upload() {
         });
         setLoadingToastId(id);
       } else {
-        // --- Process Non-PDF Immediately ---
-        console.log('📄 [UPLOAD] Processing non-PDF file...');
-        const text = await convertDocumentToText(selectedFile);
-        console.log('✅ [UPLOAD] Document text extracted, length:', text.length);
-
-        const wordCount = text.trim().split(/\s+/).length;
-        console.log('📝 [UPLOAD] Word count:', wordCount);
-
-        if (wordCount < config.minWordCount) {
-          console.warn('⚠️ [UPLOAD] File below minimum word count:', wordCount);
-          const errorMessage = t.errorWordCountMin.replace('{count}', wordCount.toLocaleString());
-          showError(t.errorTitle, errorMessage);
-          setFile(null); // Reset file if validation fails
-          return;
-        }
-
-        if (wordCount > config.maxWordCount) {
-          console.warn('⚠️ [UPLOAD] File exceeds word limit:', wordCount);
-          const errorMessage = t.errorWordCount.replace('{count}', wordCount.toLocaleString());
-          showError(t.errorTitle, errorMessage);
-          setFile(null); // Reset file if validation fails
-          return;
-        }
-        
-        setValidatedText(text); // Store validated text
-        console.log('✅ [UPLOAD] Non-PDF file validated and text stored');
-        toast.success(t.fileReadyTitle, {
-          description: t.fileReadyDesc,
-        });
+        // --- Process Non-PDF Immediately with toast.promise ---
+        const promise = toast.promise(
+          (async () => {
+            const text = await convertDocumentToText(selectedFile);
+            const wordCount = text.trim().split(/\s+/).length;
+            if (wordCount < config.minWordCount) {
+              const errorMessage = t.errorWordCountMin.replace('{count}', wordCount.toLocaleString());
+              showError(t.errorTitle, errorMessage);
+              throw new Error('ValidationError');
+            }
+            if (wordCount > config.maxWordCount) {
+              const errorMessage = t.errorWordCount.replace('{count}', wordCount.toLocaleString());
+              showError(t.errorTitle, errorMessage);
+              throw new Error('ValidationError');
+            }
+            return text;
+          })(),
+          {
+            loading: t.processingPdf,
+            success: t.fileReadyTitle,
+            error: t.errorTitle,
+            description: t.fileReadyDesc,
+          }
+        );
+        const _text = await promise.unwrap();
+        setValidatedText(_text);
       }
     } catch (error) {
       console.error('❌ [UPLOAD] Error processing file:', error);
