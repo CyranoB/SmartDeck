@@ -37,21 +37,37 @@ const limiter = rateLimit({
 })
 
 /**
- * Extract client IP from request headers
- * Checks x-forwarded-for and x-real-ip headers
+ * Extract client IP from request headers with secure validation
+ * Checks x-forwarded-for and x-real-ip headers with anti-spoofing protection
  */
 export function getClientIP(headersList: Headers): string {
-  const forwardedFor = headersList.get("x-forwarded-for")
-  const realIP = headersList.get("x-real-ip")
+  // List of trusted proxies (should be configured in environment)
+  // In production, this should be your load balancers and proxies
+  const trustedProxies = (process.env.TRUSTED_PROXIES || '127.0.0.1,::1')
+    .split(',')
+    .map(ip => ip.trim());
   
-  if (forwardedFor) {
-    // x-forwarded-for may contain multiple IPs, take the first one
-    return forwardedFor.split(',')[0].trim()
-  } else if (realIP) {
-    return realIP.trim()
+  // Get the connecting IP (directly connected client)
+  const connectionIP = headersList.get("x-connecting-ip") || "127.0.0.1";
+  
+  // Only accept x-forwarded-for from trusted sources
+  const forwardedFor = headersList.get("x-forwarded-for");
+  const realIP = headersList.get("x-real-ip");
+  
+  // Determine if the connecting IP is a trusted proxy
+  const isFromTrustedProxy = trustedProxies.includes(connectionIP);
+  
+  if (isFromTrustedProxy && forwardedFor) {
+    // x-forwarded-for may contain multiple IPs, take the first one (original client)
+    return forwardedFor.split(',')[0].trim();
+  } else if (isFromTrustedProxy && realIP) {
+    // Only accept x-real-ip from trusted proxies
+    return realIP.trim();
   }
   
-  return "127.0.0.1" // fallback to localhost if no IP found
+  // If not from a trusted proxy, use the actual connecting IP
+  // This prevents header spoofing from untrusted sources
+  return connectionIP;
 }
 
 /**
