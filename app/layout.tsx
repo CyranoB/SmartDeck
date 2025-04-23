@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/sonner"
 import ServerConfigCheck from "@/components/server-config-check"
 import "./globals.css"
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -60,6 +61,7 @@ export default function RootLayout({
             <SpeedInsights />
           </>
         )}
+        <Analytics />
       </body>
     </html>
   )
