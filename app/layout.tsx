@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/hooks/use-language"
 import { Toaster } from "@/components/ui/sonner"
 import ServerConfigCheck from "@/components/server-config-check"
 import "./globals.css"
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -51,9 +52,13 @@ export default function RootLayout({
             }}
           >
             {content}
+            <SpeedInsights />
           </ClerkProvider>
         ) : (
-          content
+          <>
+            {content}
+            <SpeedInsights />
+          </>
         )}
       </body>
     </html>
