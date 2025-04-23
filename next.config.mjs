@@ -22,7 +22,13 @@ const nextConfig = {
     parallelServerBuildTraces: false,
     // Configure body size limit for Server Actions (might affect API routes)
     serverActions: {
-      bodySizeLimit: '110mb', // Set higher than client-side limit (100MB)
+      bodySizeLimit: '50mb', // Reduced from 110mb to mitigate DoS attack surface
+    },
+  },
+  // Security: Reduce the risk of DoS attacks by lowering the body parser size limit
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
     },
   },
 }
