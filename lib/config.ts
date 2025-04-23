@@ -46,10 +46,10 @@ export const config = {
   // Content Security Policy
   csp: {
     // Default sources for connect-src directive
-    // More permissive defaults to prioritize availability over strict security
+    // Secure defaults that only allow encrypted connections
     connectSrc: parseListEnvVar(
       process.env.CSP_CONNECT_SRC,
-      ['self', 'https://*', 'wss://*', 'http://*', 'ws://*'] // Allow all HTTPS/WSS and HTTP/WS connections as fallback
+      ['self', 'https://*', 'wss://*'] // Only allow secure HTTPS/WSS connections
     ),
     // Default sources for script-src directive
     scriptSrc: parseListEnvVar(
