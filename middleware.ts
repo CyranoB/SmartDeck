@@ -1,4 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
+import { NextResponse } from 'next/server'
+import { config as appConfig } from './lib/config'
+import { logSecurityWarning, logConfiguration } from './lib/logging'
 
 const isPublicRoute = createRouteMatcher([
   '/', // Root page
@@ -6,21 +9,76 @@ const isPublicRoute = createRouteMatcher([
   '/sign-up(.*)', // Sign-up routes
 ])
 
-// --- RESTORED CLERK MIDDLEWARE ---
+/**
+ * Helper function to format CSP sources
+ * Adds quotes around 'self' and 'unsafe-inline' values
+ */
+function formatCspSources(sources: string[]): string {
+  return sources.map(source => {
+    if (source === 'self' || source === 'unsafe-inline' || source === 'unsafe-eval') {
+      return `'${source}'`;
+    }
+    return source;
+  }).join(' ');
+}
+
+// Only log CSP header once to avoid spam
+let cspHeaderLogged = false;
+
+/**
+ * Builds the Content Security Policy string from configuration
+ */
+function buildCspHeader(): string {
+  const { csp } = appConfig;
+  
+  // Only log warning and config once
+  if (!cspHeaderLogged) {
+    if (csp?.isPermissive) {
+      logSecurityWarning('Using permissive CSP defaults which may reduce security. Consider configuring stricter CSP rules in production.', {
+        connectSrc: csp?.connectSrc,
+        scriptSrc: csp?.scriptSrc,
+        styleSrc: csp?.styleSrc
+      });
+    }
+    logConfiguration('Content-Security-Policy', csp);
+    cspHeaderLogged = true;
+  }
+  
+  return [
+    `default-src 'self';`,
+    `script-src ${formatCspSources(csp?.scriptSrc || [])};`,
+    `style-src ${formatCspSources(csp?.styleSrc || [])};`,
+    `img-src ${formatCspSources(csp?.imgSrc || [])};`,
+    `font-src ${formatCspSources(csp?.fontSrc || [])};`,
+    `connect-src ${formatCspSources(csp?.connectSrc || [])};`,
+    `frame-src ${formatCspSources(csp?.frameSrc || [])};`,
+    `object-src 'none';`
+  ].join(' ');
+}
+
+// --- ENHANCED CLERK MIDDLEWARE WITH SECURITY HEADERS ---
 export default clerkMiddleware(async (auth, req) => {
   // If the route is NOT public, protect it
   if (!isPublicRoute(req)) {
     await auth.protect()
   }
-  // If the route IS public, do nothing (allow access)
+  
+  // Get the response
+  const response = NextResponse.next()
+  
+  // Add Content Security Policy header with dynamic values
+  response.headers.set('Content-Security-Policy', buildCspHeader())
+  
+  // Add other security headers
+  response.headers.set('X-XSS-Protection', '1; mode=block')
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  
+  return response
 })
-// --- END RESTORED MIDDLEWARE ---
-
-// Minimal pass-through middleware for testing (Remove this)
-// export default function middleware() {
-//   console.log('Minimal middleware running - PASSING THROUGH');
-// }
-// Removed extra brace
+// --- END ENHANCED MIDDLEWARE ---
 
 export const config = {
   matcher: [
