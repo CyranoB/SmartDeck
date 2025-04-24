@@ -25,12 +25,16 @@ function validateRedisConfig() {
     let safeUrl = redisUrl;
     try {
       const parsedUrl = new URL(redisUrl);
-      if (parsedUrl.password) parsedUrl.password = '***';
-      if (parsedUrl.username) parsedUrl.username = '';
+      // Remove credentials entirely
+      parsedUrl.username = '';
+      parsedUrl.password = '';
       safeUrl = parsedUrl.toString();
     } catch {
       const atIndex = redisUrl.indexOf('@');
-      if (atIndex !== -1) safeUrl = `***@${redisUrl.slice(atIndex + 1)}`;
+      if (atIndex !== -1) {
+        // Strip credentials and '@'
+        safeUrl = redisUrl.slice(atIndex + 1);
+      }
     }
     logSecurityWarning(urlWarning, { url: safeUrl })
     

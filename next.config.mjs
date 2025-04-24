@@ -25,12 +25,6 @@ const nextConfig = {
       bodySizeLimit: '50mb', // Reduced from 110mb to mitigate DoS attack surface
     },
   },
-  // Security: Reduce the risk of DoS attacks by lowering the body parser size limit
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
 }
 
 mergeConfig(nextConfig, userConfig)
