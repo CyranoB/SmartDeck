@@ -21,8 +21,18 @@ function validateRedisConfig() {
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL
   if (redisUrl && !redisUrl.startsWith('https://')) {
     const urlWarning = 'Redis URL is not using HTTPS. This presents a security risk in production.'
-    // Use a more efficient regex that avoids backtracking vulnerabilities
-    logSecurityWarning(urlWarning, { url: redisUrl.replace(/:[^/]*@/, ':***@') }) // Redact any credentials in the URL
+    // Redact credentials using URL API to avoid regex backtracking vulnerabilities
+    let safeUrl = redisUrl;
+    try {
+      const parsedUrl = new URL(redisUrl);
+      if (parsedUrl.password) parsedUrl.password = '***';
+      if (parsedUrl.username) parsedUrl.username = '';
+      safeUrl = parsedUrl.toString();
+    } catch {
+      const atIndex = redisUrl.indexOf('@');
+      if (atIndex !== -1) safeUrl = `***@${redisUrl.slice(atIndex + 1)}`;
+    }
+    logSecurityWarning(urlWarning, { url: safeUrl })
     
     // In production, consider throwing an error here
     if (process.env.NODE_ENV === 'production') {

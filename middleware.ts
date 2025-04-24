@@ -1,6 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import { config } from './lib/config'
+import { config as appConfig } from './lib/config'
 import { logSecurityWarning, logConfiguration } from './lib/logging'
 
 const isPublicRoute = createRouteMatcher([
@@ -22,32 +22,36 @@ function formatCspSources(sources: string[]): string {
   }).join(' ');
 }
 
+// Only log CSP header once to avoid spam
+let cspHeaderLogged = false;
+
 /**
  * Builds the Content Security Policy string from configuration
  */
 function buildCspHeader(): string {
-  const { csp } = config;
+  const { csp } = appConfig;
   
-  // Log a warning if using permissive defaults
-  if (csp.isPermissive) {
-    logSecurityWarning('Using permissive CSP defaults which may reduce security. Consider configuring stricter CSP rules in production.', {
-      connectSrc: csp.connectSrc,
-      scriptSrc: csp.scriptSrc,
-      styleSrc: csp.styleSrc
-    });
+  // Only log warning and config once
+  if (!cspHeaderLogged) {
+    if (csp?.isPermissive) {
+      logSecurityWarning('Using permissive CSP defaults which may reduce security. Consider configuring stricter CSP rules in production.', {
+        connectSrc: csp?.connectSrc,
+        scriptSrc: csp?.scriptSrc,
+        styleSrc: csp?.styleSrc
+      });
+    }
+    logConfiguration('Content-Security-Policy', csp);
+    cspHeaderLogged = true;
   }
-  
-  // Log the actual CSP configuration (sanitized)
-  logConfiguration('Content-Security-Policy', csp);
   
   return [
     `default-src 'self';`,
-    `script-src ${formatCspSources(csp.scriptSrc)};`,
-    `style-src ${formatCspSources(csp.styleSrc)};`,
-    `img-src ${formatCspSources(csp.imgSrc)};`,
-    `font-src ${formatCspSources(csp.fontSrc)};`,
-    `connect-src ${formatCspSources(csp.connectSrc)};`,
-    `frame-src ${formatCspSources(csp.frameSrc)};`,
+    `script-src ${formatCspSources(csp?.scriptSrc || [])};`,
+    `style-src ${formatCspSources(csp?.styleSrc || [])};`,
+    `img-src ${formatCspSources(csp?.imgSrc || [])};`,
+    `font-src ${formatCspSources(csp?.fontSrc || [])};`,
+    `connect-src ${formatCspSources(csp?.connectSrc || [])};`,
+    `frame-src ${formatCspSources(csp?.frameSrc || [])};`,
     `object-src 'none';`
   ].join(' ');
 }

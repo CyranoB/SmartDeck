@@ -62,18 +62,21 @@ export function getEnvVariable(key: string, defaultValue: string = ''): string {
   return defaultValue;
 }
 
+// Only log OpenAI configuration once
+let openAiConfigLogged = false;
+
 // Function to get OpenAI configuration
 export function getOpenAIConfig() {
   const apiKey = getEnvVariable('OPENAI_API_KEY');
   const model = getEnvVariable('OPENAI_MODEL', 'gpt-4o-mini');
   const baseURL = getEnvVariable('OPENAI_BASE_URL', 'https://api.openai.com/v1');
   
-  // Log configuration status without any sensitive data
-  console.log('OpenAI Config Status:', {
-    isConfigured: !!apiKey,
-    model,
-    isCustomEndpoint: baseURL !== 'https://api.openai.com/v1'
-  });
+  // Log model and custom endpoint once
+  if (!openAiConfigLogged) {
+    const isCustomEndpoint = baseURL !== 'https://api.openai.com/v1';
+    console.log(`OpenAI Model: ${model}` + (isCustomEndpoint ? `, Custom Endpoint: ${baseURL}` : ''));
+    openAiConfigLogged = true;
+  }
   
   if (!apiKey) {
     throw new Error('OpenAI API key is missing. Please check your environment variables or .env file.');
