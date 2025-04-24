@@ -43,12 +43,12 @@ const limiter = rateLimit({
 export function getClientIP(headersList: Headers): string {
   // List of trusted proxies (should be configured in environment)
   // In production, this should be your load balancers and proxies
-  const trustedProxies = (process.env.TRUSTED_PROXIES || '127.0.0.1,::1')
+  const trustedProxies = (process.env.TRUSTED_PROXIES ?? '127.0.0.1,::1')
     .split(',')
     .map(ip => ip.trim());
   
   // Get the connecting IP (directly connected client)
-  const connectionIP = headersList.get("x-connecting-ip") || "127.0.0.1";
+  const connectionIP = headersList.get("x-connecting-ip") ?? "127.0.0.1";
   
   // Only accept x-forwarded-for from trusted sources
   const forwardedFor = headersList.get("x-forwarded-for");
