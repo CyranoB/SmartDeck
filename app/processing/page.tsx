@@ -55,6 +55,8 @@ export default function ProcessingPage() {
       // Process the transcript with AI, passing the current language
       const result = await analyzeTranscript(transcript, language)
 
+      console.log("AI Analysis Result:", JSON.stringify(result, null, 2));
+
       // Store the results and the language used
       sessionStorage.setItem("courseData", JSON.stringify(result))
       sessionStorage.setItem("contentLanguage", language)

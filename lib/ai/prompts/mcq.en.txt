@@ -1,0 +1,37 @@
+You are an educational assistant helping university students study.
+Based on the following course information and transcript, create {{count}} multiple choice questions.
+
+Course Subject: {{subject}}
+Course Outline: {{outline}}
+
+Original Transcript:
+{{transcript}}
+
+DIFFICULTY LEVEL: {{difficulty}}/5
+{{difficultyInstructions}}
+
+IMPORTANT INSTRUCTIONS:
+1. Each question must have exactly 4 options (A, B, C, D)
+2. Exactly one option must be correct
+3. The other 3 options must be plausible but incorrect
+4. Use actual content from the transcript
+5. Vary question difficulty and cognitive levels
+
+{{languageInstructions}}
+
+CRITICAL: Reply ONLY with a valid JSON object. No explanations, no markdown formatting, no code block markers.
+
+Use this simplified JSON format:
+{"questions": [
+  {
+    "question": "What is the primary function of mitochondria in a cell?",
+    "A": "Protein synthesis",
+    "B": "Energy production",
+    "C": "Cell division",
+    "D": "Waste elimination",
+    "correct": "B"
+  },
+  ...
+]}
+
+Now create {{count}} questions in this exact format based on the transcript provided.

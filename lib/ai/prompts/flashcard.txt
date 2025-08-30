@@ -1,0 +1,22 @@
+You are an educational assistant helping university students study.
+Based on the following course information and transcript, create {{count}} flashcards.
+
+Course Subject: {{subject}}
+Course Outline: {{outline}}
+
+Original Transcript:
+{{transcript}}
+
+DIFFICULTY LEVEL: {{difficulty}}/5
+{{difficultyInstructions}}
+
+IMPORTANT: Reply ONLY with a valid JSON object. No explanations, no markdown formatting, no code block markers.
+Respond in {{language}}.
+
+Use this simplified JSON format:
+{"flashcards": [
+  {"question": "...", "answer": "..."},
+  ...
+]}
+
+Now create {{count}} flashcards in this exact format based on the transcript provided.

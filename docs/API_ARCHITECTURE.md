@@ -4,14 +4,14 @@
 > - Modular architecture with clear separation of concerns (route handlers, controllers, services)
 > - Robust middleware for request validation, IP verification, and rate limiting
 > - Centralized error handling and standardized logging
-> - Dedicated prompt templates separated from business logic
+> - Dedicated prompt templates separated from business logic, stored as plain text files and loaded/interpolated at runtime
 > - Comprehensive response parsing with error recovery
 
-This document outlines the architecture of the AI API implementation in the Flash Cards application, focusing on the recent refactoring for improved maintainability.
+This document outlines the architecture of the AI API implementation in the Flash Cards application, focusing on the recent refactoring for improved maintainability and the migration to file-based prompt templates.
 
 ## Overview
 
-The AI API (`/api/ai`) is built using Next.js App Router with Route Handlers, providing a serverless architecture for AI operations like analyzing transcripts and generating study materials. The codebase follows a modular design with clear separation of concerns.
+The AI API (`/api/ai`) is built using Next.js App Router with Route Handlers, providing a serverless architecture for AI operations like analyzing transcripts and generating study materials. The codebase follows a modular design with clear separation of concerns. All prompt templates are now stored as plain text files in `lib/ai/prompts/` and loaded/interpolated at runtime, which enables easy editing and localization without code changes.
 
 **Note:** This API receives pre-processed text as input. Document upload and text extraction (including asynchronous PDF processing via `/api/pdf-extract` and Redis) are handled by separate components and API routes, as detailed in the Backend Structure Document.
 
@@ -25,7 +25,7 @@ The AI API (`/api/ai`) is built using Next.js App Router with Route Handlers, pr
 /lib
   /ai
     controller.ts         # Operation-specific controllers
-    prompts.ts            # AI prompt templates
+    prompts/              # AI prompt templates (plain text, file-based)
     service.ts            # AI service logic
   errors.ts               # Custom error types
   logging.ts              # Centralized logging

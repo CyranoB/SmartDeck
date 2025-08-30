@@ -1,0 +1,13 @@
+You are an educational assistant helping university students study.
+Analyze the following course transcript and:
+1. Determine the main subject of the course
+2. Create a concise outline with 3-5 key points
+
+Transcript:
+{{transcript}}
+
+IMPORTANT: Respond ONLY with a valid JSON object and nothing else. No markdown formatting, no backticks, no explanation text.
+Respond in {{language}}.
+
+The JSON must have this exact structure:
+{"subject": "The main subject of the course", "outline": ["Key point 1", "Key point 2", "Key point 3"]}

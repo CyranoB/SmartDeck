@@ -66,12 +66,19 @@ export async function POST(request: Request) {
 
   const jobId = uuidv4()
 
+  if (!redis) {
+    return NextResponse.json(
+      { error: 'KV Store not available' },
+      { status: 503 } // Service Unavailable
+    )
+  }
+
   // Store initial job status *after* validation passes
-  await redis.set(`pdf-job:${jobId}`, {
+  await redis.set(`pdf-job:${jobId}`, JSON.stringify({
     status: 'processing',
     progress: 0,
     startedAt: new Date().toISOString()
-  })
+  }))
 
   // Process in background (non-blocking)
   processPdf(jobId, file).catch(console.error)
@@ -82,45 +89,53 @@ export async function POST(request: Request) {
 async function processPdf(jobId: string, file: File) {
   let text = ''
 
+  if (!redis) {
+    console.error('KV Store not available for PDF processing')
+    return
+  }
+
   try {
     // 1. Read the file buffer
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
     // Update progress before extraction
-    await redis.set(`pdf-job:${jobId}`, {
+    await redis.set(`pdf-job:${jobId}`, JSON.stringify({
       status: 'processing',
       progress: 30, // Progress before extraction
       updatedAt: new Date().toISOString()
-    })
+    }))
 
     // 2. Extract text using pdf-parse
     const data = await pdf(buffer)
     console.log(`✅ [pdf-parse] Extracted text from ${data.numpages} pages. Info:`, data.info) // Log info for debugging
 
     // Update progress after extraction
-    await redis.set(`pdf-job:${jobId}`, {
+    await redis.set(`pdf-job:${jobId}`, JSON.stringify({
       status: 'processing',
       progress: 70, // Progress after extraction
       updatedAt: new Date().toISOString()
-    })
+    }))
 
     // 3. Get extracted text
     text = data.text.trim() // pdf-parse returns a single string
 
+    // Sanitize the text to remove control characters that could break JSON
+    text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '');
+
     // 4. Mark job as completed in Redis
-    await redis.set(`pdf-job:${jobId}`, {
+    await redis.set(`pdf-job:${jobId}`, JSON.stringify({
       status: 'completed',
       progress: 100,
       result: text,
       completedAt: new Date().toISOString()
-    })
+    }))
   } catch (error) {
-    await redis.set(`pdf-job:${jobId}`, {
+    await redis.set(`pdf-job:${jobId}`, JSON.stringify({
       status: 'failed',
       error: error instanceof Error ? error.message : 'PDF extraction failed',
       failedAt: new Date().toISOString()
-    })
+    }))
     // No temporary file cleanup needed
   }
 }

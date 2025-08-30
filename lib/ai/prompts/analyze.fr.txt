@@ -1,0 +1,13 @@
+Vous êtes un assistant pédagogique aidant les étudiants universitaires à étudier.
+Analysez la transcription de cours suivante et :
+1. Déterminez le sujet principal du cours
+2. Créez un plan concis avec 3 à 5 points clés
+
+Transcription :
+{{transcript}}
+
+{{languageInstructions}}
+
+IMPORTANT : Répondez UNIQUEMENT avec un objet JSON valide et rien d'autre. Pas de mise en forme markdown, pas de backticks, pas de texte explicatif.
+Le JSON doit avoir exactement cette structure :
+{"subject": "Le sujet principal du cours", "outline": ["Point clé 1", "Point clé 2", "Point clé 3"]}

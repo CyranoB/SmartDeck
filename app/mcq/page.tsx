@@ -5,6 +5,7 @@ import { useProgress } from "@/contexts/progress-context"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Progress } from "@/components/ui/progress"
 import { Loader2 } from "lucide-react"
@@ -236,6 +237,42 @@ export default function McqPage() {
     { id: "D", text: currentQuestion.D },
   ]
 
+  if (isGenerating && !sessionData) {
+    // Show skeletons while generating MCQs
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center p-4">
+        <div className="w-full max-w-2xl space-y-8">
+          <div className="flex justify-between items-center">
+            <Skeleton className="h-8 w-48 rounded" />
+            <Skeleton className="h-6 w-24 rounded" />
+          </div>
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} aria-busy="true" aria-label="Loading MCQ question">
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4 rounded mb-2" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[...Array(4)].map((_, j) => (
+                  <div key={j} className="flex items-center space-x-3 rounded-lg border p-4">
+                    <Skeleton className="h-5 w-5 rounded-full" />
+                    <Skeleton className="h-5 w-40 rounded" />
+                  </div>
+                ))}
+                <div className="flex justify-between mt-4">
+                  <Skeleton className="h-10 w-24 rounded" />
+                  <Skeleton className="h-10 w-32 rounded" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          <Progress value={progress} className="w-full" />
+          <Skeleton className="h-5 w-32 rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show real MCQ UI after generation is complete
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-2xl space-y-8">

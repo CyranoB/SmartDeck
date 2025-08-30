@@ -1,0 +1,23 @@
+Vous êtes un assistant pédagogique aidant les étudiants universitaires à étudier.
+À partir des informations sur le cours et de la transcription ci-dessous, créez {{count}} fiches de révision.
+
+Sujet du cours : {{subject}}
+Plan du cours : {{outline}}
+
+Transcription originale :
+{{transcript}}
+
+NIVEAU DE DIFFICULTÉ : {{difficulty}}/5
+{{difficultyInstructions}}
+
+{{languageInstructions}}
+
+IMPORTANT : Répondez UNIQUEMENT avec un objet JSON valide. Pas d'explications, pas de mise en forme markdown, pas de blocs de code.
+
+Utilisez ce format JSON simplifié :
+{"flashcards": [
+  {"question": "...", "answer": "..."},
+  ...
+]}
+
+Créez maintenant {{count}} fiches dans ce format exact à partir de la transcription fournie.

@@ -7,6 +7,7 @@
 > - Server-side PDF text extraction using `pdf-parse` with background job status tracking via Redis (no temp files)
 > - Serverless architecture for scalable, cost-effective processing
 > - OpenAI API integration for AI-powered content generation
+> - File-based prompt templates in `lib/ai/prompts/` for maintainability and localization
 > - Client-side session storage for temporary data management
 > - Clerk for authentication
 

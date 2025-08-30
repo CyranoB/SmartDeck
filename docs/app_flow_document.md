@@ -3,7 +3,7 @@
 > **Key Points**
 > - User journey follows a linear path: Upload → Processing → Results → Study Mode → Summary
 > - Client-side storage (sessionStorage) maintains state between page transitions
-> - AI operations are handled through a modular API architecture with dedicated controllers
+> - AI operations are handled through a modular API architecture with dedicated controllers and file-based prompt templates
 > - Multi-language support for both UI elements and generated content
 > - Comprehensive error handling and visual feedback throughout the flow
 
