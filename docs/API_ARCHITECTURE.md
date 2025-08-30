@@ -1,5 +1,6 @@
 # API Architecture Documentation
 
+
 > **Key Points**
 > - Modular architecture with clear separation of concerns (route handlers, controllers, services)
 > - Robust middleware for request validation, IP verification, and rate limiting
